@@ -1,0 +1,733 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../services/supabase';
+
+export default function MobileMoney() {
+    const [transactions, setTransactions] = useState([]);
+    const [platforms, setPlatforms] = useState([]);
+    const [dailyReport, setDailyReport] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [showOpeningModal, setShowOpeningModal] = useState(false);
+    const [showTransactionModal, setShowTransactionModal] = useState(false);
+
+    // Balance State
+    const [currentBalances, setCurrentBalances] = useState({
+        cash: {},
+        platforms: {}
+    });
+    const [animatingBalances, setAnimatingBalances] = useState(new Set());
+
+    // Opening State
+    const [cashBreakdown, setCashBreakdown] = useState({
+        b10000: '', b5000: '', b2000: '', b1000: '',
+        c500: '', c250: '', c200: '', c100: '', c50: '', c25: '', c10: '', c5: ''
+    });
+    const [platformBalances, setPlatformBalances] = useState({});
+
+    // Transaction State
+    const [selectedPlatform, setSelectedPlatform] = useState(null);
+    const [transactionCash, setTransactionCash] = useState({
+        b10000: '', b5000: '', b2000: '', b1000: '',
+        c500: '', c250: '', c200: '', c100: '', c50: '', c25: '', c10: '', c5: ''
+    });
+
+    useEffect(() => {
+        checkDailyReport();
+        fetchPlatforms();
+        fetchTransactions();
+    }, []);
+
+    useEffect(() => {
+        if (dailyReport && transactions.length >= 0) {
+            calculateCurrentBalances();
+        }
+    }, [dailyReport, transactions]);
+
+    const calculateCurrentBalances = () => {
+        if (!dailyReport) return;
+
+        let openingCash = {};
+        let openingPlatforms = {};
+
+        try {
+            const notes = JSON.parse(dailyReport.notes || '{}');
+            openingCash = notes.cash_breakdown || {};
+            openingPlatforms = notes.platforms || {};
+        } catch (e) {
+            console.error('Error parsing opening balances:', e);
+        }
+
+        const currentCash = { ...openingCash };
+        const currentPlatforms = { ...openingPlatforms };
+
+        transactions.forEach(t => {
+            try {
+                const notesStr = t.notes || '{}';
+                const breakdown = JSON.parse(notesStr.includes('Breakdown:') ? notesStr.replace('Breakdown: ', '') : notesStr).cash_breakdown || {};
+
+                if (t.operation_type === 'ENCAISSEMENT') {
+                    Object.keys(breakdown).forEach(key => {
+                        currentCash[key] = (parseInt(currentCash[key]) || 0) + (parseInt(breakdown[key]) || 0);
+                    });
+                    currentPlatforms[t.platform_id] = (parseFloat(currentPlatforms[t.platform_id]) || 0) - parseFloat(t.amount);
+                } else {
+                    Object.keys(breakdown).forEach(key => {
+                        currentCash[key] = (parseInt(currentCash[key]) || 0) - (parseInt(breakdown[key]) || 0);
+                    });
+                    currentPlatforms[t.platform_id] = (parseFloat(currentPlatforms[t.platform_id]) || 0) + parseFloat(t.amount);
+                }
+            } catch (e) {
+                console.error('Error processing transaction:', e);
+            }
+        });
+
+        setCurrentBalances({ cash: currentCash, platforms: currentPlatforms });
+    };
+
+    const triggerAnimation = (key) => {
+        setAnimatingBalances(prev => new Set([...prev, key]));
+        setTimeout(() => {
+            setAnimatingBalances(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(key);
+                return newSet;
+            });
+        }, 600);
+    };
+
+    const checkDailyReport = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const { data, error } = await supabase
+                .from('mm_daily_reports')
+                .select('*')
+                .eq('report_date', today)
+                .eq('is_closed', false)
+                .single();
+
+            if (!data) {
+                setShowOpeningModal(true);
+            } else {
+                setDailyReport(data);
+            }
+        } catch (error) {
+            console.error('Error checking daily report:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchPlatforms = async () => {
+        try {
+            const { data } = await supabase
+                .from('mm_platforms')
+                .select('*')
+                .eq('is_active', true)
+                .order('name');
+
+            if (data && data.length > 0) {
+                setPlatforms(data);
+                setSelectedPlatform(data[0].id);
+                const initial = {};
+                data.forEach(p => initial[p.id] = '');
+                setPlatformBalances(initial);
+            } else {
+                setPlatforms([]);
+                setSelectedPlatform(null);
+            }
+        } catch (error) {
+            console.error('Error fetching platforms:', error);
+        }
+    };
+
+    const fetchTransactions = async () => {
+        try {
+            const { data } = await supabase
+                .from('mm_transactions')
+                .select('*, mm_platforms(name, code, color)')
+                .order('transaction_date', { ascending: false })
+                .limit(50);
+
+            setTransactions(data || []);
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        }
+    };
+
+    const calculateTotal = (breakdown) => {
+        return (
+            (parseInt(breakdown.b10000) || 0) * 10000 +
+            (parseInt(breakdown.b5000) || 0) * 5000 +
+            (parseInt(breakdown.b2000) || 0) * 2000 +
+            (parseInt(breakdown.b1000) || 0) * 1000 +
+            (parseInt(breakdown.c500) || 0) * 500 +
+            (parseInt(breakdown.c250) || 0) * 250 +
+            (parseInt(breakdown.c200) || 0) * 200 +
+            (parseInt(breakdown.c100) || 0) * 100 +
+            (parseInt(breakdown.c50) || 0) * 50 +
+            (parseInt(breakdown.c25) || 0) * 25 +
+            (parseInt(breakdown.c10) || 0) * 10 +
+            (parseInt(breakdown.c5) || 0) * 5
+        );
+    };
+
+    const handleOpenDay = async () => {
+        const total = calculateTotal(cashBreakdown);
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const { error } = await supabase
+                .from('mm_daily_reports')
+                .insert({
+                    report_date: today,
+                    opening_balance: total,
+                    notes: JSON.stringify({ cash_breakdown: cashBreakdown, platforms: platformBalances }),
+                    is_closed: false
+                });
+
+            if (error) throw error;
+            alert('Journée ouverte avec succès!');
+            setShowOpeningModal(false);
+            checkDailyReport();
+        } catch (error) {
+            console.error('Error opening day:', error);
+            alert('Erreur lors de l\'ouverture');
+        }
+    };
+
+    const handleCreateTransaction = async (type) => {
+        const total = calculateTotal(transactionCash);
+        if (total === 0) {
+            alert('Le montant ne peut pas être zéro');
+            return;
+        }
+
+        if (!selectedPlatform) {
+            alert('Veuillez sélectionner un opérateur Mobile Money');
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('mm_transactions')
+                .insert({
+                    platform_id: selectedPlatform,
+                    operation_type: type,
+                    amount: total,
+                    total_amount: total,
+                    fees: 0,
+                    notes: JSON.stringify({ cash_breakdown: transactionCash }),
+                    status: 'COMPLETED',
+                    transaction_date: new Date().toISOString()
+                });
+
+            if (error) throw error;
+
+            triggerAnimation(`platform-${selectedPlatform}`);
+            Object.keys(transactionCash).forEach(key => {
+                if (transactionCash[key]) triggerAnimation(`cash-${key}`);
+            });
+
+            alert('Transaction enregistrée!');
+            setShowTransactionModal(false);
+            setTransactionCash({
+                b10000: '', b5000: '', b2000: '', b1000: '',
+                c500: '', c250: '', c200: '', c100: '', c50: '', c25: '', c10: '', c5: ''
+            });
+            await fetchTransactions();
+        } catch (error) {
+            console.error('Error creating transaction:', error);
+            alert('Erreur: ' + error.message);
+        }
+    };
+
+    const DenominationInput = ({ label, value, onChange }) => (
+        <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wide">{label} FCFA</label>
+            <input
+                type="number"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-center font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400"
+                placeholder="0"
+            />
+        </div>
+    );
+
+    const totalCash = calculateTotal(currentBalances.cash);
+    const totalPlatforms = Object.values(currentBalances.platforms).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-50">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
+                    <p className="text-gray-600 font-medium">Chargement...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <style>{`
+                @keyframes balance-update {
+                    0%, 100% { background-color: #f0fdf4; }
+                    50% { background-color: #bbf7d0; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); }
+                }
+                .balance-animate {
+                    animation: balance-update 0.6s ease-in-out;
+                }
+                @keyframes slide-up {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .slide-up {
+                    animation: slide-up 0.3s ease-out;
+                }
+            `}</style>
+
+            <div className="max-w-7xl mx-auto p-6">
+                {/* Professional Header */}
+                <div className="flex justify-between items-center mb-8 pb-6 border-b border-gray-200 slide-up">
+                    <div>
+                        <h1 className="text-3xl font-semibold text-gray-900 mb-1">Mobile Money</h1>
+                        <p className="text-sm text-gray-500">Gestion des transactions et soldes</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowOpeningModal(true)}
+                            className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                        >
+                            Ouverture de Caisse
+                        </button>
+                        <button
+                            onClick={() => setShowTransactionModal(true)}
+                            className="px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!dailyReport}
+                        >
+                            Nouvelle Transaction
+                        </button>
+                    </div>
+                </div>
+
+                {/* Session Status */}
+                {dailyReport && (
+                    <div className="bg-white rounded-lg p-5 mb-6 border border-gray-200 shadow-sm slide-up">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                    <span className="text-xs font-semibold text-green-700 uppercase tracking-wider">Session Active</span>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                    Ouverture: <span className="font-semibold text-gray-900">{dailyReport.opening_balance?.toLocaleString()} FCFA</span>
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {new Date(dailyReport.report_date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Solde Total</div>
+                                <div className="text-2xl font-semibold text-gray-900">
+                                    {(totalCash + totalPlatforms).toLocaleString()} <span className="text-base text-gray-600">FCFA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Balance Cards */}
+                {dailyReport && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        {/* Cash Balance */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up">
+                            <div className="p-5 border-b border-gray-100">
+                                <h2 className="text-base font-semibold text-gray-900">Caisse Espèces</h2>
+                                <p className="text-xs text-gray-500 mt-0.5">Détail par dénomination</p>
+                            </div>
+
+                            <div className="p-5 bg-gray-50 border-b border-gray-100">
+                                <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total</div>
+                                <div className="text-3xl font-semibold text-gray-900">
+                                    {totalCash.toLocaleString()} <span className="text-lg text-gray-600">FCFA</span>
+                                </div>
+                            </div>
+
+                            <div className="p-5 max-h-96 overflow-y-auto">
+                                <div className="space-y-3">
+                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">Billets</div>
+                                    {[
+                                        { key: 'b10000', label: '10.000', value: 10000 },
+                                        { key: 'b5000', label: '5.000', value: 5000 },
+                                        { key: 'b2000', label: '2.000', value: 2000 },
+                                        { key: 'b1000', label: '1.000', value: 1000 }
+                                    ].map(({ key, label, value }) => {
+                                        const qty = currentBalances.cash[key] || 0;
+                                        const total = qty * value;
+                                        return (
+                                            <div
+                                                key={key}
+                                                className={`flex justify-between items-center p-3 rounded-md transition-all ${animatingBalances.has(`cash-${key}`) ? 'balance-animate' : 'bg-gray-50 hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                <span className="text-sm font-medium text-gray-700">{label} FCFA</span>
+                                                <div className="text-right">
+                                                    <span className="text-sm font-semibold text-gray-900 font-mono">{qty} × {value.toLocaleString()}</span>
+                                                    <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mt-4">Pièces</div>
+                                    {[
+                                        { key: 'c500', label: '500', value: 500 },
+                                        { key: 'c250', label: '250', value: 250 },
+                                        { key: 'c200', label: '200', value: 200 },
+                                        { key: 'c100', label: '100', value: 100 }
+                                    ].map(({ key, label, value }) => {
+                                        const qty = currentBalances.cash[key] || 0;
+                                        const total = qty * value;
+                                        return (
+                                            <div
+                                                key={key}
+                                                className={`flex justify-between items-center p-2.5 rounded-md text-sm transition-all ${animatingBalances.has(`cash-${key}`) ? 'balance-animate' : 'bg-gray-50 hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                <span className="font-medium text-gray-600">{label} F</span>
+                                                <div className="text-right">
+                                                    <span className="font-semibold text-gray-900 font-mono">{qty} × {value}</span>
+                                                    <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Platform Balances */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up">
+                            <div className="p-5 border-b border-gray-100">
+                                <h2 className="text-base font-semibold text-gray-900">Comptes Mobile Money</h2>
+                                <p className="text-xs text-gray-500 mt-0.5">Par opérateur</p>
+                            </div>
+
+                            <div className="p-5 bg-gray-50 border-b border-gray-100">
+                                <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total Mobile Money</div>
+                                <div className="text-3xl font-semibold text-gray-900">
+                                    {totalPlatforms.toLocaleString()} <span className="text-lg text-gray-600">FCFA</span>
+                                </div>
+                            </div>
+
+                            <div className="p-5 max-h-96 overflow-y-auto">
+                                <div className="space-y-3">
+                                    {/* Platform List with Logos */}
+                                    {platforms.map(platform => {
+                                        const balance = parseFloat(currentBalances.platforms[platform.id]) || 0;
+                                        return (
+                                            <div
+                                                key={platform.id}
+                                                className={`p-4 rounded-md border transition-all ${animatingBalances.has(`platform-${platform.id}`)
+                                                    ? 'balance-animate border-green-300'
+                                                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-3">
+                                                        <div
+                                                            className="w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-sm shadow-sm"
+                                                            style={{ backgroundColor: platform.color }}
+                                                        >
+                                                            {platform.code.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-semibold text-sm text-gray-900">{platform.name}</div>
+                                                            <div className="text-xs text-gray-500 font-mono">{platform.code}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-xl font-semibold font-mono" style={{ color: platform.color }}>
+                                                            {balance.toLocaleString()}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">FCFA</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Transactions Table */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden slide-up">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                        <h3 className="text-base font-semibold text-gray-900">Historique des Transactions</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Dernières 50 opérations</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date & Heure</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Opérateur</th>
+                                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Montant</th>
+                                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-100">
+                                {transactions.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-12 text-center">
+                                            <div className="text-gray-400">Aucune transaction enregistrée</div>
+                                            <p className="text-gray-500 text-xs mt-2">Les transactions apparaîtront ici</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    transactions.map((t) => (
+                                        <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-mono">
+                                                {new Date(t.transaction_date).toLocaleString('fr-FR', {
+                                                    day: '2-digit',
+                                                    month: '2-digit',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex px-2.5 py-1 rounded text-xs font-semibold ${t.operation_type === 'ENCAISSEMENT'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {t.operation_type}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
+                                                        style={{ backgroundColor: t.mm_platforms?.color || '#6B7280' }}
+                                                    >
+                                                        {t.mm_platforms?.code?.substring(0, 1) || '?'}
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-900">{t.mm_platforms?.name || 'N/A'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right font-mono">
+                                                <span className={`text-sm font-semibold ${t.operation_type === 'ENCAISSEMENT' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {t.operation_type === 'ENCAISSEMENT' ? '+' : '-'}{parseInt(t.amount)?.toLocaleString()} F
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <span className="inline-flex px-2.5 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                    {t.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* Opening Modal - Professional */}
+            {showOpeningModal && (
+                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full m-4 max-h-[90vh] overflow-y-auto">
+                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 border-b border-blue-700">
+                            <h2 className="text-2xl font-semibold text-white">Ouverture de Caisse</h2>
+                            <p className="text-blue-100 text-sm mt-1">Saisissez les soldes initiaux pour démarrer la session</p>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Cash Section */}
+                            <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Caisse Espèces (FCFA)</h3>
+
+                                <div className="mb-4">
+                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
+                                    <div className="grid grid-cols-4 gap-3">
+                                        <DenominationInput label="10.000" value={cashBreakdown.b10000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b10000: v })} />
+                                        <DenominationInput label="5.000" value={cashBreakdown.b5000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b5000: v })} />
+                                        <DenominationInput label="2.000" value={cashBreakdown.b2000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b2000: v })} />
+                                        <DenominationInput label="1.000" value={cashBreakdown.b1000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b1000: v })} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
+                                    <div className="grid grid-cols-8 gap-2">
+                                        <DenominationInput label="500" value={cashBreakdown.c500} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c500: v })} />
+                                        <DenominationInput label="250" value={cashBreakdown.c250} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c250: v })} />
+                                        <DenominationInput label="200" value={cashBreakdown.c200} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c200: v })} />
+                                        <DenominationInput label="100" value={cashBreakdown.c100} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c100: v })} />
+                                        <DenominationInput label="50" value={cashBreakdown.c50} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c50: v })} />
+                                        <DenominationInput label="25" value={cashBreakdown.c25} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c25: v })} />
+                                        <DenominationInput label="10" value={cashBreakdown.c10} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c10: v })} />
+                                        <DenominationInput label="5" value={cashBreakdown.c5} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c5: v })} />
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
+                                    <div className="flex justify-between items-center">
+                                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Espèces</div>
+                                        <div className="text-2xl font-semibold text-gray-900 font-mono">
+                                            {calculateTotal(cashBreakdown).toLocaleString()} FCFA
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Mobile Money Section */}
+                            <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Soldes Mobile Money</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {platforms.map(p => (
+                                        <div key={p.id}>
+                                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                                                <div
+                                                    className="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold"
+                                                    style={{ backgroundColor: p.color }}
+                                                >
+                                                    {p.code.substring(0, 1)}
+                                                </div>
+                                                {p.name}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={platformBalances[p.id] || ''}
+                                                onChange={(e) => setPlatformBalances({ ...platformBalances, [p.id]: e.target.value })}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-center font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={handleOpenDay}
+                                    className="flex-1 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                                >
+                                    Valider l'Ouverture
+                                </button>
+                                <button
+                                    onClick={() => setShowOpeningModal(false)}
+                                    className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Transaction Modal - Professional */}
+            {showTransactionModal && (
+                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full m-4 max-h-[90vh] overflow-y-auto">
+                        <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-6 py-5 border-b border-green-700">
+                            <h2 className="text-2xl font-semibold text-white">Nouvelle Transaction</h2>
+                            <p className="text-green-100 text-sm mt-1">Enregistrer un encaissement ou décaissement</p>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Operator */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Opérateur Mobile Money</label>
+                                {platforms.length === 0 ? (
+                                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                        Aucun opérateur disponible
+                                    </div>
+                                ) : (
+                                    <select
+                                        value={selectedPlatform || ''}
+                                        onChange={(e) => setSelectedPlatform(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+                                    >
+                                        <option value="">Sélectionner un opérateur</option>
+                                        {platforms.map(p => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.name} ({p.code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+
+                            {/* Cash Breakdown */}
+                            <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Ventilation des Espèces</h3>
+
+                                <div className="mb-4">
+                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
+                                    <div className="grid grid-cols-4 gap-3">
+                                        <DenominationInput label="10.000" value={transactionCash.b10000} onChange={(v) => setTransactionCash({ ...transactionCash, b10000: v })} />
+                                        <DenominationInput label="5.000" value={transactionCash.b5000} onChange={(v) => setTransactionCash({ ...transactionCash, b5000: v })} />
+                                        <DenominationInput label="2.000" value={transactionCash.b2000} onChange={(v) => setTransactionCash({ ...transactionCash, b2000: v })} />
+                                        <DenominationInput label="1.000" value={transactionCash.b1000} onChange={(v) => setTransactionCash({ ...transactionCash, b1000: v })} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
+                                    <div className="grid grid-cols-8 gap-2">
+                                        <DenominationInput label="500" value={transactionCash.c500} onChange={(v) => setTransactionCash({ ...transactionCash, c500: v })} />
+                                        <DenominationInput label="250" value={transactionCash.c250} onChange={(v) => setTransactionCash({ ...transactionCash, c250: v })} />
+                                        <DenominationInput label="200" value={transactionCash.c200} onChange={(v) => setTransactionCash({ ...transactionCash, c200: v })} />
+                                        <DenominationInput label="100" value={transactionCash.c100} onChange={(v) => setTransactionCash({ ...transactionCash, c100: v })} />
+                                        <DenominationInput label="50" value={transactionCash.c50} onChange={(v) => setTransactionCash({ ...transactionCash, c50: v })} />
+                                        <DenominationInput label="25" value={transactionCash.c25} onChange={(v) => setTransactionCash({ ...transactionCash, c25: v })} />
+                                        <DenominationInput label="10" value={transactionCash.c10} onChange={(v) => setTransactionCash({ ...transactionCash, c10: v })} />
+                                        <DenominationInput label="5" value={transactionCash.c5} onChange={(v) => setTransactionCash({ ...transactionCash, c5: v })} />
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
+                                    <div className="flex justify-between items-center">
+                                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Montant Total</div>
+                                        <div className="text-2xl font-semibold text-gray-900 font-mono">
+                                            {calculateTotal(transactionCash).toLocaleString()} FCFA
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => handleCreateTransaction('ENCAISSEMENT')}
+                                    className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                                >
+                                    ENCAISSEMENT
+                                </button>
+                                <button
+                                    onClick={() => handleCreateTransaction('DECAISSEMENT')}
+                                    className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                                >
+                                    DÉCAISSEMENT
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={() => setShowTransactionModal(false)}
+                                className="w-full px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
