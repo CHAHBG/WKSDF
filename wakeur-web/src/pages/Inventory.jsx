@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import {
     CubeIcon,
     CurrencyDollarIcon,
@@ -11,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function Inventory() {
+    const { userProfile } = useAuth();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -79,7 +81,8 @@ export default function Inventory() {
                     category_id: newProduct.category_id,
                     unit_price: parseFloat(newProduct.price),
                     quantity: parseInt(newProduct.quantity),
-                    alert_threshold: parseInt(newProduct.alert_threshold)
+                    alert_threshold: parseInt(newProduct.alert_threshold),
+                    shop_id: userProfile?.shop_id
                 }]);
 
             if (error) throw error;
@@ -143,14 +146,14 @@ export default function Inventory() {
             <div className="mb-8">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
                             Gestion de l'Inventaire
                         </h1>
-                        <p className="text-gray-500 mt-1">Suivez votre stock, valeur et gains</p>
+                        <p className="text-gray-500 text-lg">Suivez votre stock, valeur et gains</p>
                     </div>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                        className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm font-medium"
                     >
                         <PlusIcon className="w-5 h-5" />
                         Ajouter un Produit
@@ -158,7 +161,7 @@ export default function Inventory() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
                         <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
                             <CubeIcon className="w-8 h-8" />
                         </div>
@@ -167,7 +170,7 @@ export default function Inventory() {
                             <p className="text-2xl font-bold text-gray-800">{totalStock.toLocaleString()}</p>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
                         <div className="p-3 bg-orange-50 rounded-xl text-orange-600">
                             <ChartBarIcon className="w-8 h-8" />
                         </div>
@@ -176,7 +179,7 @@ export default function Inventory() {
                             <p className="text-2xl font-bold text-gray-800">{totalAvoir.toLocaleString()} CFA</p>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
                         <div className="p-3 bg-green-50 rounded-xl text-green-600">
                             <CurrencyDollarIcon className="w-8 h-8" />
                         </div>
@@ -189,10 +192,10 @@ export default function Inventory() {
             </div>
 
             {/* Inventory Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50/50">
+                        <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Produit</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</th>

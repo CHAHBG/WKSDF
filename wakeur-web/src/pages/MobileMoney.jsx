@@ -285,181 +285,180 @@ export default function MobileMoney() {
                 }
             `}</style>
 
-            <div className="max-w-7xl mx-auto p-6">
-                {/* Professional Header */}
-                <div className="flex justify-between items-center mb-8 pb-6 border-b border-gray-200 slide-up">
+            <div className="max-w-5xl mx-auto p-6">
+                <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-3xl font-semibold text-gray-900 mb-1">Mobile Money</h1>
-                        <p className="text-sm text-gray-500">Gestion des transactions et soldes</p>
+                        <h1 className="text-2xl font-bold text-gray-900">Mobile Money</h1>
+                        <p className="text-gray-500">Gérez vos transactions et votre solde</p>
                     </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setShowOpeningModal(true)}
-                            className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                        >
-                            Ouverture de Caisse
-                        </button>
-                        <button
-                            onClick={() => setShowTransactionModal(true)}
-                            className="px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!dailyReport}
-                        >
-                            Nouvelle Transaction
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setShowTransactionModal(true)}
+                        className="px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!dailyReport}
+                    >
+                        Nouvelle Transaction
+                    </button>
                 </div>
 
+
+
                 {/* Session Status */}
-                {dailyReport && (
-                    <div className="bg-white rounded-lg p-5 mb-6 border border-gray-200 shadow-sm slide-up">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                    <span className="text-xs font-semibold text-green-700 uppercase tracking-wider">Session Active</span>
+                {
+                    dailyReport && (
+                        <div className="bg-white rounded-lg p-5 mb-6 border border-gray-200 shadow-sm slide-up">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                        <span className="text-xs font-semibold text-green-700 uppercase tracking-wider">Session Active</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600">
+                                        Ouverture: <span className="font-semibold text-gray-900">{dailyReport.opening_balance?.toLocaleString()} FCFA</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {new Date(dailyReport.report_date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
                                 </div>
-                                <p className="text-sm text-gray-600">
-                                    Ouverture: <span className="font-semibold text-gray-900">{dailyReport.opening_balance?.toLocaleString()} FCFA</span>
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {new Date(dailyReport.report_date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Solde Total</div>
-                                <div className="text-2xl font-semibold text-gray-900">
-                                    {(totalCash + totalPlatforms).toLocaleString()} <span className="text-base text-gray-600">FCFA</span>
+                                <div className="text-right">
+                                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Solde Total</div>
+                                    <div className="text-2xl font-semibold text-gray-900">
+                                        {(totalCash + totalPlatforms).toLocaleString()} <span className="text-base text-gray-600">FCFA</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Balance Cards */}
-                {dailyReport && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        {/* Cash Balance */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up">
-                            <div className="p-5 border-b border-gray-100">
-                                <h2 className="text-base font-semibold text-gray-900">Caisse Espèces</h2>
-                                <p className="text-xs text-gray-500 mt-0.5">Détail par dénomination</p>
-                            </div>
-
-                            <div className="p-5 bg-gray-50 border-b border-gray-100">
-                                <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total</div>
-                                <div className="text-3xl font-semibold text-gray-900">
-                                    {totalCash.toLocaleString()} <span className="text-lg text-gray-600">FCFA</span>
+                {
+                    dailyReport && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            {/* Cash Balance */}
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up">
+                                <div className="p-5 border-b border-gray-100">
+                                    <h2 className="text-base font-semibold text-gray-900">Caisse Espèces</h2>
+                                    <p className="text-xs text-gray-500 mt-0.5">Détail par dénomination</p>
                                 </div>
-                            </div>
 
-                            <div className="p-5 max-h-96 overflow-y-auto">
-                                <div className="space-y-3">
-                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">Billets</div>
-                                    {[
-                                        { key: 'b10000', label: '10.000', value: 10000 },
-                                        { key: 'b5000', label: '5.000', value: 5000 },
-                                        { key: 'b2000', label: '2.000', value: 2000 },
-                                        { key: 'b1000', label: '1.000', value: 1000 }
-                                    ].map(({ key, label, value }) => {
-                                        const qty = currentBalances.cash[key] || 0;
-                                        const total = qty * value;
-                                        return (
-                                            <div
-                                                key={key}
-                                                className={`flex justify-between items-center p-3 rounded-md transition-all ${animatingBalances.has(`cash-${key}`) ? 'balance-animate' : 'bg-gray-50 hover:bg-gray-100'
-                                                    }`}
-                                            >
-                                                <span className="text-sm font-medium text-gray-700">{label} FCFA</span>
-                                                <div className="text-right">
-                                                    <span className="text-sm font-semibold text-gray-900 font-mono">{qty} × {value.toLocaleString()}</span>
-                                                    <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-
-                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mt-4">Pièces</div>
-                                    {[
-                                        { key: 'c500', label: '500', value: 500 },
-                                        { key: 'c250', label: '250', value: 250 },
-                                        { key: 'c200', label: '200', value: 200 },
-                                        { key: 'c100', label: '100', value: 100 }
-                                    ].map(({ key, label, value }) => {
-                                        const qty = currentBalances.cash[key] || 0;
-                                        const total = qty * value;
-                                        return (
-                                            <div
-                                                key={key}
-                                                className={`flex justify-between items-center p-2.5 rounded-md text-sm transition-all ${animatingBalances.has(`cash-${key}`) ? 'balance-animate' : 'bg-gray-50 hover:bg-gray-100'
-                                                    }`}
-                                            >
-                                                <span className="font-medium text-gray-600">{label} F</span>
-                                                <div className="text-right">
-                                                    <span className="font-semibold text-gray-900 font-mono">{qty} × {value}</span>
-                                                    <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="p-5 bg-gray-50 border-b border-gray-100">
+                                    <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total</div>
+                                    <div className="text-3xl font-semibold text-gray-900">
+                                        {totalCash.toLocaleString()} <span className="text-lg text-gray-600">FCFA</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Platform Balances */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up">
-                            <div className="p-5 border-b border-gray-100">
-                                <h2 className="text-base font-semibold text-gray-900">Comptes Mobile Money</h2>
-                                <p className="text-xs text-gray-500 mt-0.5">Par opérateur</p>
-                            </div>
-
-                            <div className="p-5 bg-gray-50 border-b border-gray-100">
-                                <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total Mobile Money</div>
-                                <div className="text-3xl font-semibold text-gray-900">
-                                    {totalPlatforms.toLocaleString()} <span className="text-lg text-gray-600">FCFA</span>
-                                </div>
-                            </div>
-
-                            <div className="p-5 max-h-96 overflow-y-auto">
-                                <div className="space-y-3">
-                                    {/* Platform List with Logos */}
-                                    {platforms.map(platform => {
-                                        const balance = parseFloat(currentBalances.platforms[platform.id]) || 0;
-                                        return (
-                                            <div
-                                                key={platform.id}
-                                                className={`p-4 rounded-md border transition-all ${animatingBalances.has(`platform-${platform.id}`)
-                                                    ? 'balance-animate border-green-300'
-                                                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                <div className="flex justify-between items-center">
-                                                    <div className="flex items-center gap-3">
-                                                        <div
-                                                            className="w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-sm shadow-sm"
-                                                            style={{ backgroundColor: platform.color }}
-                                                        >
-                                                            {platform.code.substring(0, 2).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-semibold text-sm text-gray-900">{platform.name}</div>
-                                                            <div className="text-xs text-gray-500 font-mono">{platform.code}</div>
-                                                        </div>
-                                                    </div>
+                                <div className="p-5 max-h-96 overflow-y-auto">
+                                    <div className="space-y-3">
+                                        <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">Billets</div>
+                                        {[
+                                            { key: 'b10000', label: '10.000', value: 10000 },
+                                            { key: 'b5000', label: '5.000', value: 5000 },
+                                            { key: 'b2000', label: '2.000', value: 2000 },
+                                            { key: 'b1000', label: '1.000', value: 1000 }
+                                        ].map(({ key, label, value }) => {
+                                            const qty = currentBalances.cash[key] || 0;
+                                            const total = qty * value;
+                                            return (
+                                                <div
+                                                    key={key}
+                                                    className={`flex justify-between items-center p-3 rounded-md transition-all ${animatingBalances.has(`cash-${key}`) ? 'balance-animate' : 'bg-gray-50 hover:bg-gray-100'}`}
+                                                >
+                                                    <span className="text-sm font-medium text-gray-700">{label} FCFA</span>
                                                     <div className="text-right">
-                                                        <div className="text-xl font-semibold font-mono" style={{ color: platform.color }}>
-                                                            {balance.toLocaleString()}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">FCFA</div>
+                                                        <span className="text-sm font-semibold text-gray-900 font-mono">{qty} × {value.toLocaleString()}</span>
+                                                        <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+
+                                        <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mt-4">Pièces</div>
+                                        {[
+                                            { key: 'c500', label: '500', value: 500 },
+                                            { key: 'c250', label: '250', value: 250 },
+                                            { key: 'c200', label: '200', value: 200 },
+                                            { key: 'c100', label: '100', value: 100 },
+                                            { key: 'c50', label: '50', value: 50 },
+                                            { key: 'c25', label: '25', value: 25 },
+                                            { key: 'c10', label: '10', value: 10 },
+                                            { key: 'c5', label: '5', value: 5 }
+                                        ].map(({ key, label, value }) => {
+                                            const qty = currentBalances.cash[key] || 0;
+                                            const total = qty * value;
+                                            return (
+                                                <div
+                                                    key={key}
+                                                    className={`flex justify-between items-center p-2.5 rounded-md text-sm transition-all ${animatingBalances.has(`cash-${key}`) ? 'balance-animate' : 'bg-gray-50 hover:bg-gray-100'}`}
+                                                >
+                                                    <span className="font-medium text-gray-600">{label} F</span>
+                                                    <div className="text-right">
+                                                        <span className="font-semibold text-gray-900 font-mono">{qty} × {value}</span>
+                                                        <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div >
+                                </div >
+                            </div >
+
+                            {/* Platform Balances */}
+                            < div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up" >
+                                <div className="p-5 border-b border-gray-100">
+                                    <h2 className="text-base font-semibold text-gray-900">Comptes Mobile Money</h2>
+                                    <p className="text-xs text-gray-500 mt-0.5">Par opérateur</p>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
+                                <div className="p-5 bg-gray-50 border-b border-gray-100">
+                                    <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total Mobile Money</div>
+                                    <div className="text-3xl font-semibold text-gray-900">
+                                        {totalPlatforms.toLocaleString()} <span className="text-lg text-gray-600">FCFA</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-5 max-h-96 overflow-y-auto">
+                                    <div className="space-y-3">
+                                        {/* Platform List with Logos */}
+                                        {platforms.map(platform => {
+                                            const balance = parseFloat(currentBalances.platforms[platform.id]) || 0;
+                                            return (
+                                                <div
+                                                    key={platform.id}
+                                                    className={`p-4 rounded-md border transition-all ${animatingBalances.has(`platform-${platform.id}`)
+                                                        ? 'balance-animate border-green-300'
+                                                        : 'border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex items-center gap-3">
+                                                            <div
+                                                                className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-md"
+                                                                style={{ backgroundColor: platform.color }}
+                                                            >
+                                                                <i className="bi bi-phone text-xl"></i>
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-semibold text-sm text-gray-900">{platform.name}</div>
+                                                                <div className="text-xs text-gray-500 font-mono">{platform.code}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-xl font-semibold font-mono" style={{ color: platform.color }}>
+                                                                {balance.toLocaleString()}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500">FCFA</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div >
+                        </div >
+                    )
+                }
 
                 {/* Transactions Table */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden slide-up">
@@ -534,200 +533,204 @@ export default function MobileMoney() {
                         </table>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Opening Modal - Professional */}
-            {showOpeningModal && (
-                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full m-4 max-h-[90vh] overflow-y-auto">
-                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 border-b border-blue-700">
-                            <h2 className="text-2xl font-semibold text-white">Ouverture de Caisse</h2>
-                            <p className="text-blue-100 text-sm mt-1">Saisissez les soldes initiaux pour démarrer la session</p>
+            {
+                showOpeningModal && (
+                    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                        <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full m-4 max-h-[90vh] overflow-y-auto">
+                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 border-b border-blue-700">
+                                <h2 className="text-2xl font-semibold text-white">Ouverture de Caisse</h2>
+                                <p className="text-blue-100 text-sm mt-1">Saisissez les soldes initiaux pour démarrer la session</p>
+                            </div>
+
+                            <div className="p-6 space-y-6">
+                                {/* Cash Section */}
+                                <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Caisse Espèces (FCFA)</h3>
+
+                                    <div className="mb-4">
+                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
+                                        <div className="grid grid-cols-4 gap-3">
+                                            <DenominationInput label="10.000" value={cashBreakdown.b10000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b10000: v })} />
+                                            <DenominationInput label="5.000" value={cashBreakdown.b5000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b5000: v })} />
+                                            <DenominationInput label="2.000" value={cashBreakdown.b2000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b2000: v })} />
+                                            <DenominationInput label="1.000" value={cashBreakdown.b1000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b1000: v })} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
+                                        <div className="grid grid-cols-8 gap-2">
+                                            <DenominationInput label="500" value={cashBreakdown.c500} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c500: v })} />
+                                            <DenominationInput label="250" value={cashBreakdown.c250} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c250: v })} />
+                                            <DenominationInput label="200" value={cashBreakdown.c200} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c200: v })} />
+                                            <DenominationInput label="100" value={cashBreakdown.c100} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c100: v })} />
+                                            <DenominationInput label="50" value={cashBreakdown.c50} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c50: v })} />
+                                            <DenominationInput label="25" value={cashBreakdown.c25} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c25: v })} />
+                                            <DenominationInput label="10" value={cashBreakdown.c10} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c10: v })} />
+                                            <DenominationInput label="5" value={cashBreakdown.c5} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c5: v })} />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Espèces</div>
+                                            <div className="text-2xl font-semibold text-gray-900 font-mono">
+                                                {calculateTotal(cashBreakdown).toLocaleString()} FCFA
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Mobile Money Section */}
+                                <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Soldes Mobile Money</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {platforms.map(p => (
+                                            <div key={p.id}>
+                                                <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                                                    <div
+                                                        className="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold"
+                                                        style={{ backgroundColor: p.color }}
+                                                    >
+                                                        {p.code.substring(0, 1)}
+                                                    </div>
+                                                    {p.name}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={platformBalances[p.id] || ''}
+                                                    onChange={(e) => setPlatformBalances({ ...platformBalances, [p.id]: e.target.value })}
+                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-center font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        onClick={handleOpenDay}
+                                        className="flex-1 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                                    >
+                                        Valider l'Ouverture
+                                    </button>
+                                    <button
+                                        onClick={() => setShowOpeningModal(false)}
+                                        className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                                    >
+                                        Annuler
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                )
+            }
 
-                        <div className="p-6 space-y-6">
-                            {/* Cash Section */}
-                            <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Caisse Espèces (FCFA)</h3>
+            {/* Transaction Modal - Professional */}
+            {
+                showTransactionModal && (
+                    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                        <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full m-4 max-h-[90vh] overflow-y-auto">
+                            <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-6 py-5 border-b border-green-700">
+                                <h2 className="text-2xl font-semibold text-white">Nouvelle Transaction</h2>
+                                <p className="text-green-100 text-sm mt-1">Enregistrer un encaissement ou décaissement</p>
+                            </div>
 
-                                <div className="mb-4">
-                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
-                                    <div className="grid grid-cols-4 gap-3">
-                                        <DenominationInput label="10.000" value={cashBreakdown.b10000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b10000: v })} />
-                                        <DenominationInput label="5.000" value={cashBreakdown.b5000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b5000: v })} />
-                                        <DenominationInput label="2.000" value={cashBreakdown.b2000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b2000: v })} />
-                                        <DenominationInput label="1.000" value={cashBreakdown.b1000} onChange={(v) => setCashBreakdown({ ...cashBreakdown, b1000: v })} />
-                                    </div>
-                                </div>
-
+                            <div className="p-6 space-y-6">
+                                {/* Operator */}
                                 <div>
-                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
-                                    <div className="grid grid-cols-8 gap-2">
-                                        <DenominationInput label="500" value={cashBreakdown.c500} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c500: v })} />
-                                        <DenominationInput label="250" value={cashBreakdown.c250} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c250: v })} />
-                                        <DenominationInput label="200" value={cashBreakdown.c200} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c200: v })} />
-                                        <DenominationInput label="100" value={cashBreakdown.c100} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c100: v })} />
-                                        <DenominationInput label="50" value={cashBreakdown.c50} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c50: v })} />
-                                        <DenominationInput label="25" value={cashBreakdown.c25} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c25: v })} />
-                                        <DenominationInput label="10" value={cashBreakdown.c10} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c10: v })} />
-                                        <DenominationInput label="5" value={cashBreakdown.c5} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c5: v })} />
-                                    </div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Opérateur Mobile Money</label>
+                                    {platforms.length === 0 ? (
+                                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                            Aucun opérateur disponible
+                                        </div>
+                                    ) : (
+                                        <select
+                                            value={selectedPlatform || ''}
+                                            onChange={(e) => setSelectedPlatform(e.target.value)}
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+                                        >
+                                            <option value="">Sélectionner un opérateur</option>
+                                            {platforms.map(p => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.name} ({p.code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
 
-                                <div className="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
-                                    <div className="flex justify-between items-center">
-                                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Espèces</div>
-                                        <div className="text-2xl font-semibold text-gray-900 font-mono">
-                                            {calculateTotal(cashBreakdown).toLocaleString()} FCFA
+                                {/* Cash Breakdown */}
+                                <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Ventilation des Espèces</h3>
+
+                                    <div className="mb-4">
+                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
+                                        <div className="grid grid-cols-4 gap-3">
+                                            <DenominationInput label="10.000" value={transactionCash.b10000} onChange={(v) => setTransactionCash({ ...transactionCash, b10000: v })} />
+                                            <DenominationInput label="5.000" value={transactionCash.b5000} onChange={(v) => setTransactionCash({ ...transactionCash, b5000: v })} />
+                                            <DenominationInput label="2.000" value={transactionCash.b2000} onChange={(v) => setTransactionCash({ ...transactionCash, b2000: v })} />
+                                            <DenominationInput label="1.000" value={transactionCash.b1000} onChange={(v) => setTransactionCash({ ...transactionCash, b1000: v })} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
+                                        <div className="grid grid-cols-8 gap-2">
+                                            <DenominationInput label="500" value={transactionCash.c500} onChange={(v) => setTransactionCash({ ...transactionCash, c500: v })} />
+                                            <DenominationInput label="250" value={transactionCash.c250} onChange={(v) => setTransactionCash({ ...transactionCash, c250: v })} />
+                                            <DenominationInput label="200" value={transactionCash.c200} onChange={(v) => setTransactionCash({ ...transactionCash, c200: v })} />
+                                            <DenominationInput label="100" value={transactionCash.c100} onChange={(v) => setTransactionCash({ ...transactionCash, c100: v })} />
+                                            <DenominationInput label="50" value={transactionCash.c50} onChange={(v) => setTransactionCash({ ...transactionCash, c50: v })} />
+                                            <DenominationInput label="25" value={transactionCash.c25} onChange={(v) => setTransactionCash({ ...transactionCash, c25: v })} />
+                                            <DenominationInput label="10" value={transactionCash.c10} onChange={(v) => setTransactionCash({ ...transactionCash, c10: v })} />
+                                            <DenominationInput label="5" value={transactionCash.c5} onChange={(v) => setTransactionCash({ ...transactionCash, c5: v })} />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Montant Total</div>
+                                            <div className="text-2xl font-semibold text-gray-900 font-mono">
+                                                {calculateTotal(transactionCash).toLocaleString()} FCFA
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Mobile Money Section */}
-                            <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Soldes Mobile Money</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {platforms.map(p => (
-                                        <div key={p.id}>
-                                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                                                <div
-                                                    className="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold"
-                                                    style={{ backgroundColor: p.color }}
-                                                >
-                                                    {p.code.substring(0, 1)}
-                                                </div>
-                                                {p.name}
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={platformBalances[p.id] || ''}
-                                                onChange={(e) => setPlatformBalances({ ...platformBalances, [p.id]: e.target.value })}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-center font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                    ))}
+                                {/* Actions */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => handleCreateTransaction('ENCAISSEMENT')}
+                                        className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                                    >
+                                        ENCAISSEMENT
+                                    </button>
+                                    <button
+                                        onClick={() => handleCreateTransaction('DECAISSEMENT')}
+                                        className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                                    >
+                                        DÉCAISSEMENT
+                                    </button>
                                 </div>
-                            </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-3 pt-2">
                                 <button
-                                    onClick={handleOpenDay}
-                                    className="flex-1 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-                                >
-                                    Valider l'Ouverture
-                                </button>
-                                <button
-                                    onClick={() => setShowOpeningModal(false)}
-                                    className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                                    onClick={() => setShowTransactionModal(false)}
+                                    className="w-full px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
                                 >
                                     Annuler
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Transaction Modal - Professional */}
-            {showTransactionModal && (
-                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full m-4 max-h-[90vh] overflow-y-auto">
-                        <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-6 py-5 border-b border-green-700">
-                            <h2 className="text-2xl font-semibold text-white">Nouvelle Transaction</h2>
-                            <p className="text-green-100 text-sm mt-1">Enregistrer un encaissement ou décaissement</p>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            {/* Operator */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Opérateur Mobile Money</label>
-                                {platforms.length === 0 ? (
-                                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                                        Aucun opérateur disponible
-                                    </div>
-                                ) : (
-                                    <select
-                                        value={selectedPlatform || ''}
-                                        onChange={(e) => setSelectedPlatform(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                                    >
-                                        <option value="">Sélectionner un opérateur</option>
-                                        {platforms.map(p => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.name} ({p.code})
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
-                            </div>
-
-                            {/* Cash Breakdown */}
-                            <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Ventilation des Espèces</h3>
-
-                                <div className="mb-4">
-                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
-                                    <div className="grid grid-cols-4 gap-3">
-                                        <DenominationInput label="10.000" value={transactionCash.b10000} onChange={(v) => setTransactionCash({ ...transactionCash, b10000: v })} />
-                                        <DenominationInput label="5.000" value={transactionCash.b5000} onChange={(v) => setTransactionCash({ ...transactionCash, b5000: v })} />
-                                        <DenominationInput label="2.000" value={transactionCash.b2000} onChange={(v) => setTransactionCash({ ...transactionCash, b2000: v })} />
-                                        <DenominationInput label="1.000" value={transactionCash.b1000} onChange={(v) => setTransactionCash({ ...transactionCash, b1000: v })} />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
-                                    <div className="grid grid-cols-8 gap-2">
-                                        <DenominationInput label="500" value={transactionCash.c500} onChange={(v) => setTransactionCash({ ...transactionCash, c500: v })} />
-                                        <DenominationInput label="250" value={transactionCash.c250} onChange={(v) => setTransactionCash({ ...transactionCash, c250: v })} />
-                                        <DenominationInput label="200" value={transactionCash.c200} onChange={(v) => setTransactionCash({ ...transactionCash, c200: v })} />
-                                        <DenominationInput label="100" value={transactionCash.c100} onChange={(v) => setTransactionCash({ ...transactionCash, c100: v })} />
-                                        <DenominationInput label="50" value={transactionCash.c50} onChange={(v) => setTransactionCash({ ...transactionCash, c50: v })} />
-                                        <DenominationInput label="25" value={transactionCash.c25} onChange={(v) => setTransactionCash({ ...transactionCash, c25: v })} />
-                                        <DenominationInput label="10" value={transactionCash.c10} onChange={(v) => setTransactionCash({ ...transactionCash, c10: v })} />
-                                        <DenominationInput label="5" value={transactionCash.c5} onChange={(v) => setTransactionCash({ ...transactionCash, c5: v })} />
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
-                                    <div className="flex justify-between items-center">
-                                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Montant Total</div>
-                                        <div className="text-2xl font-semibold text-gray-900 font-mono">
-                                            {calculateTotal(transactionCash).toLocaleString()} FCFA
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => handleCreateTransaction('ENCAISSEMENT')}
-                                    className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-                                >
-                                    ENCAISSEMENT
-                                </button>
-                                <button
-                                    onClick={() => handleCreateTransaction('DECAISSEMENT')}
-                                    className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-sm"
-                                >
-                                    DÉCAISSEMENT
-                                </button>
-                            </div>
-
-                            <button
-                                onClick={() => setShowTransactionModal(false)}
-                                className="w-full px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
-                            >
-                                Annuler
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

@@ -6,7 +6,7 @@ export default function SignUp() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [loading, setLoading] = useState('');
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const navigate = useNavigate();
@@ -42,30 +42,31 @@ export default function SignUp() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-                <div>
-                    <h2 className="text-center text-3xl font-bold text-blue-600">
-                        Créer un Compte
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+            <div className="max-w-md w-full bg-white p-10 rounded-2xl shadow-xl border border-gray-100 animate-scale-up">
+                <div className="text-center mb-10">
+                    <h2 className="text-4xl font-bold text-gray-900 mb-2">
+                        Rejoindre<br /><span className="font-light italic text-blue-600">Wakeur Sokhna</span>
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
-                        Rejoignez Wakeur Sokhna
+                    <p className="text-gray-500 text-lg">
+                        Créez votre espace de gestion.
                     </p>
                 </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
+
+                <form className="space-y-6" onSubmit={handleSignUp}>
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+                        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium">
                             {error}
                         </div>
                     )}
                     {success && (
-                        <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded">
+                        <div className="bg-green-50 border border-green-100 text-green-600 px-4 py-3 rounded-xl text-sm font-medium">
                             {success}
                         </div>
                     )}
                     <div className="space-y-4">
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="email" className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                                 Email
                             </label>
                             <input
@@ -73,12 +74,12 @@ export default function SignUp() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="email@address.com"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                placeholder="votre@email.com"
                             />
                         </div>
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="password" className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                                 Mot de passe
                             </label>
                             <input
@@ -86,12 +87,12 @@ export default function SignUp() {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Mot de passe"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                placeholder="••••••••"
                             />
                         </div>
                         <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="confirmPassword" className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                                 Confirmer le mot de passe
                             </label>
                             <input
@@ -99,8 +100,8 @@ export default function SignUp() {
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Confirmer le mot de passe"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                placeholder="••••••••"
                             />
                         </div>
                     </div>
@@ -109,17 +110,24 @@ export default function SignUp() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                            className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Création du compte...' : 'S\'inscrire'}
+                            {loading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <span>Création...</span>
+                                </>
+                            ) : (
+                                'Créer un compte'
+                            )}
                         </button>
                     </div>
 
-                    <div className="text-center">
+                    <div className="text-center pt-4 border-t border-gray-100">
                         <button
                             type="button"
                             onClick={() => navigate('/login')}
-                            className="text-sm text-blue-600 hover:text-blue-500"
+                            className="text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors"
                         >
                             Déjà un compte ? Se connecter
                         </button>

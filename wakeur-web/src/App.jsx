@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './services/supabase';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -12,24 +12,12 @@ import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import AgentManagement from './pages/AgentManagement';
 import Transactions from './pages/Transactions';
-import DailyReports from './pages/DailyReports';
+import Reports from './pages/Reports';
+import Expenses from './pages/Expenses';
 
-function App() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+const AppRoutes = () => {
+  const { user, loading } = useAuth();
+  console.log('AppRoutes render. User:', user?.id, 'Loading:', loading);
 
   if (loading) {
     return (
@@ -40,28 +28,38 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        {session ? (
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="inventory" element={<Inventory />} />
-            <Route path="transfers" element={<Transfers />} />
-            <Route path="mobile-money" element={<MobileMoney />} />
-            <Route path="sales" element={<Sales />} />
-            <Route path="agents" element={<AgentManagement />} />
-            <Route path="transactions" element={<Transactions />} />
-            <Route path="daily-reports" element={<DailyReports />} />
-          </Route>
-        ) : (
-          <>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </>
-        )}
-      </Routes>
-    </Router>
+    <Routes>
+      {user ? (
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="inventory" element={<Inventory />} />
+          <Route path="transfers" element={<Transfers />} />
+          <Route path="mobile-money" element={<MobileMoney />} />
+          <Route path="sales" element={<Sales />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="expenses" element={<Expenses />} />
+          <Route path="agents" element={<AgentManagement />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      ) : (
+        <>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </>
+      )}
+    </Routes>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
   );
 }
 

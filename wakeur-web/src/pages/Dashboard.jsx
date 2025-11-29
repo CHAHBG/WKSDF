@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -27,6 +28,7 @@ ChartJS.register(
 );
 
 export default function Dashboard() {
+    const { user } = useAuth();
     const [stats, setStats] = useState({
         totalProducts: 0,
         lowStock: 0,
@@ -42,24 +44,46 @@ export default function Dashboard() {
     const [monthlySalesData, setMonthlySalesData] = useState(null);
     const [topProducts, setTopProducts] = useState([]);
     const [lowStockProducts, setLowStockProducts] = useState([]);
+    const [shopName, setShopName] = useState('Wakeur Sokhna');
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (user) {
+            fetchData();
+            fetchShopSettings();
+        }
+    }, [user]);
+
+    const fetchShopSettings = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('shop_settings')
+                .select('*')
+                .single();
+
+            if (error) throw error;
+            if (data) {
+                setShopName(data.shop_name || 'Wakeur Sokhna');
+            }
+        } catch (error) {
+            console.error('Error fetching shop settings:', error);
+        }
+    };
 
     const fetchData = async () => {
         try {
-            const [productsRes, salesRes] = await Promise.all([
+            const [productsRes, salesRes, saleItemsRes] = await Promise.all([
                 supabase.from('v_inventory_with_avoir').select('*'),
-                supabase.from('sales').select('*')
+                supabase.from('sales').select('*'),
+                supabase.from('sale_items').select('*')
             ]);
 
             const products = productsRes.data || [];
             const sales = salesRes.data || [];
+            const saleItems = saleItemsRes.data || [];
 
             // Calculate Stats
             const totalProducts = products.length;
-            const lowStock = products.filter(p => p.quantity <= (p.alert_threshold || 5)).length;
+            const lowStock = products.filter(p => p.quantity <= (p.min_stock_level || 5)).length;
             const totalStockValue = products.reduce((sum, p) => sum + (p.quantity * p.unit_price), 0);
 
             // Sales Statistics
@@ -151,19 +175,19 @@ export default function Dashboard() {
 
             // Top Selling Products
             const productSalesMap = {};
-            sales.forEach(sale => {
-                if (sale.product_id) {
-                    if (!productSalesMap[sale.product_id]) {
-                        productSalesMap[sale.product_id] = { revenue: 0, quantity: 0 };
+            saleItems.forEach(item => {
+                if (item.product_id) {
+                    if (!productSalesMap[item.product_id]) {
+                        productSalesMap[item.product_id] = { revenue: 0, quantity: 0 };
                     }
-                    productSalesMap[sale.product_id].revenue += sale.amount || 0;
-                    productSalesMap[sale.product_id].quantity += sale.quantity || 0;
+                    productSalesMap[item.product_id].revenue += item.total_price || 0;
+                    productSalesMap[item.product_id].quantity += item.quantity || 0;
                 }
             });
 
             const topSelling = Object.entries(productSalesMap)
                 .map(([productId, stats]) => {
-                    const product = products.find(p => p.id === parseInt(productId));
+                    const product = products.find(p => p.id === productId);
                     return {
                         name: product?.name || 'Produit inconnu',
                         ...stats
@@ -176,7 +200,7 @@ export default function Dashboard() {
 
             // Low Stock Products
             const lowStockItems = products
-                .filter(p => p.quantity <= (p.alert_threshold || 5))
+                .filter(p => p.quantity <= (p.min_stock_level || 5))
                 .sort((a, b) => a.quantity - b.quantity)
                 .slice(0, 5);
             setLowStockProducts(lowStockItems);
@@ -223,31 +247,109 @@ export default function Dashboard() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90">Revenu Total</h3>
-                    <p className="text-3xl font-bold mt-2">{stats.totalRevenue.toLocaleString()} CFA</p>
-                    <p className="text-xs mt-1 opacity-75">{stats.totalTransactions} transactions</p>
+                {/* Revenue Card */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Revenu Total</p>
+                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
+                                {stats.totalRevenue.toLocaleString()} <span className="text-sm font-normal text-gray-500">CFA</span>
+                            </h3>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-blue-600">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex items-center text-sm">
+                        <span className="text-green-600 flex items-center font-medium bg-green-50 px-2 py-0.5 rounded-full">
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            {stats.totalTransactions}
+                        </span>
+                        <span className="text-gray-400 ml-2">transactions</span>
+                    </div>
                 </div>
-                <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-lg shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90">Ventes Aujourd'hui</h3>
-                    <p className="text-3xl font-bold mt-2">{stats.todaySales.toLocaleString()} CFA</p>
-                    <p className="text-xs mt-1 opacity-75">Cette semaine: {stats.thisWeekSales.toLocaleString()}</p>
+
+                {/* Today Sales Card */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Ventes Aujourd'hui</p>
+                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
+                                {stats.todaySales.toLocaleString()} <span className="text-sm font-normal text-gray-500">CFA</span>
+                            </h3>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-green-600">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex items-center text-sm">
+                        <span className="text-gray-500">
+                            Cette semaine: <span className="font-semibold text-gray-900">{stats.thisWeekSales.toLocaleString()}</span>
+                        </span>
+                    </div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-lg shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90">Valeur Stock</h3>
-                    <p className="text-3xl font-bold mt-2">{stats.totalStockValue.toLocaleString()} CFA</p>
-                    <p className="text-xs mt-1 opacity-75">{stats.totalProducts} produits</p>
+
+                {/* Stock Value Card */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Valeur du Stock</p>
+                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
+                                {stats.totalStockValue.toLocaleString()} <span className="text-sm font-normal text-gray-500">CFA</span>
+                            </h3>
+                        </div>
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-600">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex items-center text-sm">
+                        <span className="text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full">
+                            {stats.totalProducts}
+                        </span>
+                        <span className="text-gray-400 ml-2">produits en stock</span>
+                    </div>
                 </div>
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-lg shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90">Alertes Stock</h3>
-                    <p className="text-3xl font-bold mt-2">{stats.lowStock}</p>
-                    <p className="text-xs mt-1 opacity-75">Produits en rupture</p>
+
+                {/* Low Stock Card */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Alertes Stock</p>
+                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
+                                {stats.lowStock}
+                            </h3>
+                        </div>
+                        <div className={`p-3 rounded-lg ${stats.lowStock > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-6 h-6 ${stats.lowStock > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex items-center text-sm">
+                        {stats.lowStock > 0 ? (
+                            <span className="text-red-600 font-medium flex items-center">
+                                <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+                                Attention requise
+                            </span>
+                        ) : (
+                            <span className="text-green-600 font-medium flex items-center">
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                Stock sain
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div className="bg-white p-6 rounded-lg shadow-md">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-xl font-bold mb-4">Tendance des Ventes (7 jours)</h2>
                     {salesTrendData ? (
                         <div className="h-64">
@@ -264,7 +366,7 @@ export default function Dashboard() {
                     )}
                 </div>
 
-                <div className="bg-white p-6 rounded-lg shadow-md">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-xl font-bold mb-4">Distribution par Catégorie</h2>
                     {categoryData ? (
                         <div className="h-64 flex justify-center">
@@ -282,7 +384,7 @@ export default function Dashboard() {
             {/* Charts Row 2 - Monthly Sales & Low Stock */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Monthly Sales Trend */}
-                <div className="bg-white p-6 rounded-lg shadow-md">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-xl font-bold mb-4">Ventes Mensuelles (6 Derniers Mois)</h2>
                     {monthlySalesData ? (
                         <div className="h-64">
@@ -300,7 +402,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Low Stock Alert */}
-                <div className="bg-white p-6 rounded-lg shadow-md">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-xl font-bold mb-4">Alertes Stock Faible</h2>
                     {lowStockProducts.length > 0 ? (
                         <div className="space-y-3">
@@ -324,7 +426,7 @@ export default function Dashboard() {
             </div>
 
             {/* Top Products Table */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold mb-4">Top 5 Produits Vendus</h2>
                 <div className="overflow-x-auto">
                     <table className="min-w-full">

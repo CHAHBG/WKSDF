@@ -1,81 +1,99 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Sidebar() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { shopSettings, userProfile, signOut } = useAuth();
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        await signOut();
         navigate('/login');
     };
 
+    const isAgent = userProfile?.role === 'agent';
+    const shopName = shopSettings?.shop_name || 'Wakeur Sokhna';
+    const shopNameParts = shopName.split(' ');
+    const firstName = shopNameParts[0];
+    const lastName = shopNameParts.slice(1).join(' ');
+
+    const mainMenuItems = [
+        { path: '/', label: 'Dashboard', allowedRoles: ['owner', 'agent'] },
+        { path: '/inventory', label: 'Inventaire', allowedRoles: ['owner'] },
+        { path: '/transfers', label: 'Transferts', allowedRoles: ['owner'] },
+        { path: '/mobile-money', label: 'Mobile Money', allowedRoles: ['owner', 'agent'] },
+        { path: '/sales', label: 'Ventes', allowedRoles: ['owner', 'agent'] },
+        { path: '/expenses', label: 'Dépenses', allowedRoles: ['owner'] },
+    ];
+
+    const managementItems = [
+        { path: '/agents', label: 'Agents', allowedRoles: ['owner'] },
+        { path: '/transactions', label: 'Transactions', allowedRoles: ['owner', 'agent'] },
+        { path: '/reports', label: 'Rapports & Analyses', allowedRoles: ['owner'] },
+    ];
+
+    const filterItems = (items) => {
+        return items.filter(item => {
+            if (!userProfile?.role) return false;
+            return item.allowedRoles.includes(userProfile.role);
+        });
+    };
+
     return (
-        <div className="fixed left-0 top-0 h-full w-64 bg-blue-600 text-white p-6">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold">Wakeur Sokhna</h1>
+        <div className="fixed left-0 top-0 h-full w-72 bg-slate-900 border-r border-slate-800 p-6 flex flex-col z-50 text-white shadow-2xl">
+            <div className="mb-10 px-2">
+                <h1 className="text-3xl font-serif font-bold text-white tracking-tight flex flex-col">
+                    {firstName}
+                    {lastName && (
+                        <span className="text-amber-500 text-lg font-sans font-medium tracking-widest uppercase mt-1">
+                            {lastName}
+                        </span>
+                    )}
+                </h1>
             </div>
-            <nav className="space-y-2">
-                <Link
-                    to="/"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Dashboard
-                </Link>
-                <Link
-                    to="/inventory"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Inventory
-                </Link>
-                <Link
-                    to="/transfers"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Transfers
-                </Link>
-                <Link
-                    to="/mobile-money"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Mobile Money
-                </Link>
-                <Link
-                    to="/sales"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Sales
-                </Link>
-                <div className="pt-4 pb-2">
-                    <p className="px-4 text-xs font-semibold text-blue-200 uppercase tracking-wider">
-                        Agent System
-                    </p>
+
+            <nav className="space-y-1 flex-1 overflow-y-auto scrollbar-hide">
+                <p className="px-4 mb-3 text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Menu Principal</p>
+
+                {filterItems(mainMenuItems).map((item) => (
+                    <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium border border-transparent ${location.pathname === item.path
+                            ? 'bg-slate-800 text-white border-slate-700'
+                            : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-700'
+                            }`}
+                    >
+                        {item.label}
+                    </Link>
+                ))}
+
+                <div className="pt-8 pb-3">
+                    <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Gestion</p>
                 </div>
-                <Link
-                    to="/agents"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Agents
-                </Link>
-                <Link
-                    to="/transactions"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Transactions
-                </Link>
-                <Link
-                    to="/daily-reports"
-                    className="block px-4 py-2 rounded hover:bg-blue-700 transition"
-                >
-                    Daily Reports
-                </Link>
+
+                {filterItems(managementItems).map((item) => (
+                    <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium border border-transparent ${location.pathname === item.path
+                            ? 'bg-slate-800 text-white border-slate-700'
+                            : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-700'
+                            }`}
+                    >
+                        {item.label}
+                    </Link>
+                ))}
             </nav>
-            <div className="absolute bottom-6 left-6 right-6">
+
+            <div className="pt-6 border-t border-slate-800 mt-4">
                 <button
                     onClick={handleLogout}
-                    className="w-full px-4 py-2 bg-red-500 rounded hover:bg-red-600 transition"
+                    className="w-full px-4 py-3 text-left text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-all duration-200 font-medium flex items-center gap-2"
                 >
-                    Logout
+                    <span>Déconnexion</span>
                 </button>
             </div>
         </div>
