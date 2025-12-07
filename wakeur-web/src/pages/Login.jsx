@@ -57,7 +57,7 @@ export default function Login() {
             <div className="max-w-md w-full bg-white p-10 rounded-2xl shadow-xl border border-gray-100 animate-scale-up">
                 <div className="text-center mb-8">
                     <h2 className="text-4xl font-bold text-gray-900 mb-2">
-                        Wakeur<span className="font-light italic text-blue-600">Sokhna</span>
+                        Ness<span className="font-light italic text-blue-600">Shop</span>
                     </h2>
                     <p className="text-gray-500 text-lg">
                         {isAgentLogin ? 'Espace Agent' : 'Espace Administration'}
@@ -103,7 +103,7 @@ export default function Login() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                        placeholder="admin@wakeur.com"
+                                        placeholder="admin@ness.com"
                                     />
                                 </div>
                                 <div>

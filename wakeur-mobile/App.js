@@ -18,13 +18,20 @@ import AgentManagementScreen from './screens/AgentManagementScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
 import CreateTransactionScreen from './screens/CreateTransactionScreen';
 
+// Import custom splash
+import AnimatedSplashScreen from './screens/AnimatedSplashScreen';
+
 const Stack = createStackNavigator();
 
 const AppContent = () => {
   const { user, userProfile, loading } = useAuth();
+  const [splashFinished, setSplashFinished] = React.useState(false);
 
-  if (loading) {
-    return null; // Or a splash screen
+  // Show splash screen if loading or animation not finished
+  if (loading || !splashFinished) {
+    return (
+      <AnimatedSplashScreen onFinish={() => setSplashFinished(true)} />
+    );
   }
 
   // Not logged in - show auth screens

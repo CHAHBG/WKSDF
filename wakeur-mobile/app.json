@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "wakeur-mobile",
-    "slug": "wakeur-mobile",
+    "name": "Ness",
+    "slug": "ness-shop",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,10 +12,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ness.mobile"
     },
     "android": {
-      "package": "com.wakeur.mobile",
+      "package": "com.ness.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

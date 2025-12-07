@@ -53,6 +53,7 @@ export default function Reports() {
             const doc = new jsPDF();
             const shopName = user?.shop_settings?.shop_name || 'Wakeur Sokhna';
             const pageWidth = doc.internal.pageSize.width;
+            const startXStats = pageWidth - 80; // X position for stats section
 
             // --- Header Design ---
             // Background Header

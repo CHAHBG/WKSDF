@@ -46,7 +46,7 @@ export default function SignUp() {
             <div className="max-w-md w-full bg-white p-10 rounded-2xl shadow-xl border border-gray-100 animate-scale-up">
                 <div className="text-center mb-10">
                     <h2 className="text-4xl font-bold text-gray-900 mb-2">
-                        Rejoindre<br /><span className="font-light italic text-blue-600">Wakeur Sokhna</span>
+                        Rejoindre<br /><span className="font-light italic text-blue-600">Ness</span>
                     </h2>
                     <p className="text-gray-500 text-lg">
                         Créez votre espace de gestion.
