@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
 const PASSWORD_RULES = [
-    { key: 'length', label: '10 caracteres minimum', test: (value) => value.length >= 10 },
+    { key: 'length', label: '10 caractères minimum', test: (value) => value.length >= 10 },
     { key: 'upper', label: 'Une lettre majuscule', test: (value) => /[A-Z]/.test(value) },
     { key: 'lower', label: 'Une lettre minuscule', test: (value) => /[a-z]/.test(value) },
     { key: 'digit', label: 'Un chiffre', test: (value) => /\d/.test(value) },
-    { key: 'symbol', label: 'Un caractere special', test: (value) => /[^A-Za-z0-9]/.test(value) },
+    { key: 'symbol', label: 'Un caractère spécial', test: (value) => /[^A-Za-z0-9]/.test(value) },
 ];
 
 const parseRecoveryParams = (urlValue) => {
@@ -88,7 +88,7 @@ export default function ResetPassword() {
             } catch {
                 if (isMounted) {
                     setHasSession(false);
-                    setError('Lien invalide ou expire. Demandez un nouveau lien de reinitialisation.');
+                    setError('Lien invalide ou expiré. Demandez un nouveau lien de réinitialisation.');
                 }
             } finally {
                 if (isMounted) {
@@ -125,12 +125,12 @@ export default function ResetPassword() {
         setInfo('');
 
         if (!hasSession) {
-            setError('Session de reinitialisation absente. Demandez un nouveau lien.');
+            setError('Session de réinitialisation absente. Demandez un nouveau lien.');
             return;
         }
 
         if (!isPasswordStrongEnough) {
-            setError('Le mot de passe ne respecte pas toutes les regles de securite.');
+            setError('Le mot de passe ne respecte pas toutes les règles de sécurité.');
             return;
         }
 
@@ -146,7 +146,7 @@ export default function ResetPassword() {
                 throw updateError;
             }
 
-            setInfo('Mot de passe mis a jour. Redirection vers la connexion...');
+            setInfo('Mot de passe mis à jour. Redirection vers la connexion...');
 
             // End the temporary recovery session for a clean login.
             await supabase.auth.signOut();
@@ -156,9 +156,9 @@ export default function ResetPassword() {
             }, 900);
         } catch (err) {
             if (/session/i.test(err.message || '')) {
-                setError('Session de reinitialisation expiree. Demandez un nouveau lien.');
+                setError('Session de réinitialisation expirée. Demandez un nouveau lien.');
             } else {
-                setError(err.message || 'Impossible de mettre a jour le mot de passe.');
+                setError(err.message || 'Impossible de mettre à jour le mot de passe.');
             }
         } finally {
             setLoading(false);
@@ -166,27 +166,24 @@ export default function ResetPassword() {
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-slate-950">
-            <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-emerald-300/20 blur-3xl" />
-
+        <div className="relative min-h-screen overflow-hidden bg-slate-100">
             <div className="relative mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center p-4 sm:p-6">
                 <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl md:grid-cols-[1fr_1.1fr]">
-                    <aside className="hidden bg-slate-900 p-10 text-slate-100 md:block">
-                        <p className="inline-flex rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100">
-                            Securite du compte
+                    <aside className="hidden border-r border-slate-200 bg-white p-10 text-slate-900 md:block">
+                        <p className="inline-flex rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Sécurité du compte
                         </p>
-                        <h1 className="mt-6 text-3xl font-bold leading-tight text-white">
-                            Reinitialisation
+                        <h1 className="mt-6 text-3xl font-bold leading-tight text-slate-900">
+                            Réinitialisation
                             <br />
-                            renforcee
+                            renforcée
                         </h1>
-                        <p className="mt-4 text-sm text-slate-300">
-                            Choisissez un mot de passe robuste pour proteger les donnees de votre boutique.
+                        <p className="mt-4 text-sm text-slate-600">
+                            Choisissez un mot de passe robuste pour protéger les données de votre boutique.
                         </p>
 
-                        <div className="mt-8 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-slate-200">
-                            Utilisez un mot de passe que vous n utilisez pas sur un autre service.
+                        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                            Utilisez un mot de passe que vous n'utilisez pas sur un autre service.
                         </div>
                     </aside>
 
@@ -194,13 +191,13 @@ export default function ResetPassword() {
                         <div className="mb-8">
                             <h2 className="text-3xl font-bold text-slate-900">Nouveau mot de passe</h2>
                             <p className="mt-2 text-sm text-slate-500">
-                                Entrez un mot de passe securise puis confirmez-le.
+                                Entrez un mot de passe sécurisé puis confirmez-le.
                             </p>
                         </div>
 
                         {checkingLink && (
                             <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
-                                Verification du lien en cours...
+                                Vérification du lien en cours...
                             </div>
                         )}
 
@@ -266,7 +263,7 @@ export default function ResetPassword() {
                             </div>
 
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">Regles mot de passe</p>
+                                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">Règles mot de passe</p>
                                 <ul className="space-y-2 text-sm">
                                     {passwordChecks.map((rule) => (
                                         <li key={rule.key} className={rule.passed ? 'text-emerald-700' : 'text-slate-500'}>
@@ -281,7 +278,7 @@ export default function ResetPassword() {
                                 disabled={loading || checkingLink || !hasSession}
                                 className="w-full rounded-xl bg-slate-900 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                {loading ? 'Mise a jour...' : 'Mettre a jour le mot de passe'}
+                                {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
                             </button>
 
                             <div className="border-t border-slate-100 pt-4 text-center">
@@ -291,7 +288,7 @@ export default function ResetPassword() {
                                     onClick={() => navigate('/login', { replace: true })}
                                     className="text-sm font-semibold text-slate-500 transition hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    Retour a la connexion
+                                    Retour à la connexion
                                 </button>
                             </div>
                         </form>

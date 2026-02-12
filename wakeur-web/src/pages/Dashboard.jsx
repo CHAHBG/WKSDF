@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -124,23 +124,23 @@ export default function Dashboard() {
             setCategoryData({
                 labels: categoryLabels,
                 datasets: [{
-                    label: 'Valeur par CatÃ©gorie (CFA)',
+                    label: 'Valeur par Catégorie (CFA)',
                     data: categoryValues,
                     backgroundColor: [
-                        'rgba(54, 162, 235, 0.6)',
-                        'rgba(255, 159, 64, 0.6)',
-                        'rgba(255, 99, 132, 0.6)',
-                        'rgba(75, 192, 192, 0.6)',
-                        'rgba(153, 102, 255, 0.6)',
-                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(79, 98, 120, 0.45)',
+                        'rgba(119, 106, 84, 0.45)',
+                        'rgba(133, 91, 91, 0.45)',
+                        'rgba(85, 118, 112, 0.45)',
+                        'rgba(109, 99, 130, 0.45)',
+                        'rgba(128, 123, 96, 0.45)',
                     ],
                     borderColor: [
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 159, 64, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',
-                        'rgba(255, 206, 86, 1)',
+                        'rgba(79, 98, 120, 1)',
+                        'rgba(119, 106, 84, 1)',
+                        'rgba(133, 91, 91, 1)',
+                        'rgba(85, 118, 112, 1)',
+                        'rgba(109, 99, 130, 1)',
+                        'rgba(128, 123, 96, 1)',
                     ],
                     borderWidth: 1,
                 }],
@@ -169,8 +169,8 @@ export default function Dashboard() {
                 datasets: [{
                     label: 'Ventes (CFA)',
                     data: last7Days.map(d => salesByDay[d]),
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgb(79, 98, 120)',
+                    backgroundColor: 'rgba(79, 98, 120, 0.2)',
                     tension: 0.3
                 }]
             });
@@ -232,8 +232,8 @@ export default function Dashboard() {
                 datasets: [{
                     label: 'Ventes Mensuelles (CFA)',
                     data: monthsData,
-                    backgroundColor: 'rgba(99, 102, 241, 0.5)',
-                    borderColor: 'rgb(99, 102, 241)',
+                    backgroundColor: 'rgba(95, 112, 134, 0.5)',
+                    borderColor: 'rgb(95, 112, 134)',
                     borderWidth: 2
                 }]
             });
@@ -369,7 +369,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-4">Distribution par CatÃ©gorie</h2>
+                    <h2 className="text-xl font-bold mb-4">Distribution par Catégorie</h2>
                     {categoryData ? (
                         <div className="h-64 flex justify-center">
                             <Doughnut data={categoryData} options={{
@@ -436,7 +436,7 @@ export default function Dashboard() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rang</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QuantitÃ© Vendue</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité Vendue</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu</th>
                             </tr>
                         </thead>
@@ -462,11 +462,12 @@ export default function Dashboard() {
                         </tbody>
                     </table>
                     {topProducts.length === 0 && (
-                        <p className="text-center text-gray-500 py-8">Aucune vente enregistrÃ©e</p>
+                        <p className="text-center text-gray-500 py-8">Aucune vente enregistrée</p>
                     )}
                 </div>
             </div>
         </div>
     );
 }
+
 

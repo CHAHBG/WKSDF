@@ -24,7 +24,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         { path: '/transfers', label: 'Transferts', allowedRoles: ['owner'] },
         { path: '/mobile-money', label: 'Mobile Money', allowedRoles: ['owner', 'agent'] },
         { path: '/sales', label: 'Ventes', allowedRoles: ['owner', 'agent'] },
-        { path: '/expenses', label: 'Depenses', allowedRoles: ['owner'] },
+        { path: '/expenses', label: 'Dépenses', allowedRoles: ['owner'] },
     ];
 
     const managementItems = [
@@ -103,10 +103,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
                         onClick={handleLogout}
                         className="w-full rounded-xl px-4 py-3 text-left text-base font-semibold text-rose-600 transition-colors hover:bg-rose-50"
                     >
-                        Deconnexion
+                        Déconnexion
                     </button>
                 </div>
             </aside>
         </>
     );
 }
+

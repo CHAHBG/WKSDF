@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -69,7 +69,7 @@ export default function Login() {
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         if (params.get('reset') === 'success') {
-            setInfo('Mot de passe mis a jour. Connectez-vous avec le nouveau mot de passe.');
+            setInfo('Mot de passe mis à jour. Connectez-vous avec le nouveau mot de passe.');
         }
     }, [location.search]);
 
@@ -86,7 +86,7 @@ export default function Login() {
             setFailedAttempts(0);
             setLockUntil(nextLockUntil);
             window.localStorage.setItem(ADMIN_LOGIN_LOCK_KEY, String(nextLockUntil));
-            throw new Error(`Trop de tentatives. Reessayez dans ${Math.ceil(LOGIN_LOCK_DURATION_MS / 1000)} secondes.`);
+            throw new Error(`Trop de tentatives. Réessayez dans ${Math.ceil(LOGIN_LOCK_DURATION_MS / 1000)} secondes.`);
         }
 
         setFailedAttempts(attempts);
@@ -107,7 +107,7 @@ export default function Login() {
                 const sanitizedCode = code.replace(/\D/g, '');
 
                 if (!sanitizedPhone || !sanitizedCode) {
-                    throw new Error('Veuillez saisir le telephone et le code PIN.');
+                    throw new Error('Veuillez saisir le téléphone et le code PIN.');
                 }
 
                 const result = await loginAsAgent(sanitizedPhone, sanitizedCode);
@@ -120,7 +120,7 @@ export default function Login() {
             }
 
             if (isLocked) {
-                throw new Error(`Compte temporairement bloque. Reessayez dans ${lockSecondsRemaining} secondes.`);
+                throw new Error(`Compte temporairement bloqué. Réessayez dans ${lockSecondsRemaining} secondes.`);
             }
 
             const normalizedEmail = normalizeEmail(email);
@@ -159,7 +159,7 @@ export default function Login() {
 
         const normalizedEmail = normalizeEmail(email);
         if (!EMAIL_REGEX.test(normalizedEmail)) {
-            setError('Veuillez saisir un email valide puis cliquer sur "Mot de passe oublie ?".');
+            setError('Veuillez saisir un email valide puis cliquer sur "Mot de passe oublié ?".');
             return;
         }
 
@@ -175,15 +175,15 @@ export default function Login() {
 
             if (resetError) {
                 if (/rate limit/i.test(resetError.message || '')) {
-                    throw new Error('Trop de demandes de reinitialisation. Veuillez patienter un peu.');
+                    throw new Error('Trop de demandes de réinitialisation. Veuillez patienter un peu.');
                 }
-                throw new Error('Impossible d envoyer l email de reinitialisation pour le moment.');
+                throw new Error('Impossible d envoyer l email de réinitialisation pour le moment.');
             }
 
             setResetCooldownUntil(Date.now() + RESET_EMAIL_COOLDOWN_MS);
-            setInfo('Si un compte existe pour cet email, un lien de reinitialisation a ete envoye.');
+            setInfo('Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.');
         } catch (resetFlowError) {
-            setError(resetFlowError.message || 'Erreur lors de la demande de reinitialisation.');
+            setError(resetFlowError.message || 'Erreur lors de la demande de réinitialisation.');
         } finally {
             setLoading(false);
         }
@@ -199,12 +199,12 @@ export default function Login() {
                                 Wakeur Sokhna
                             </p>
                             <h1 className="mt-6 text-4xl font-bold leading-tight">
-                                Gestion securisee
+                                Gestion sécurisée
                                 <br />
                                 pour votre boutique
                             </h1>
                             <p className="mt-4 text-sm text-slate-600">
-                                Connexion admin et agent, recuperation de mot de passe par email, et flux de connexion renforce.
+                                Connexion admin et agent, récupération de mot de passe par email, et flux de connexion renforcé.
                             </p>
                         </div>
 
@@ -213,7 +213,7 @@ export default function Login() {
                             <ul className="mt-3 space-y-2 text-sm text-slate-700">
                                 <li>Utilisez un mot de passe unique et robuste.</li>
                                 <li>Ne partagez jamais votre code PIN agent.</li>
-                                <li>Demandez un nouveau lien si l ancien a expire.</li>
+                                <li>Demandez un nouveau lien si l'ancien a expiré.</li>
                             </ul>
                         </div>
                     </aside>
@@ -262,7 +262,7 @@ export default function Login() {
 
                             {isLocked && (
                                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
-                                    Trop de tentatives de connexion. Reessayez dans {lockSecondsRemaining} secondes.
+                                    Trop de tentatives de connexion. Réessayez dans {lockSecondsRemaining} secondes.
                                 </div>
                             )}
 
@@ -311,7 +311,7 @@ export default function Login() {
                                                 onClick={handleForgotPassword}
                                                 className="text-sm font-semibold text-slate-500 transition hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                                             >
-                                                Mot de passe oublie ?
+                                                Mot de passe oublié ?
                                             </button>
                                             {isResetCoolingDown && (
                                                 <span className="text-xs font-semibold text-slate-400">
@@ -325,7 +325,7 @@ export default function Login() {
                                 <>
                                     <div>
                                         <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                                            Telephone
+                                            Téléphone
                                         </label>
                                         <input
                                             type="tel"
@@ -378,7 +378,7 @@ export default function Login() {
                                         onClick={() => navigate('/signup')}
                                         className="text-sm font-semibold text-slate-500 transition hover:text-slate-800"
                                     >
-                                        Pas encore de compte ? Creer un compte
+                                        Pas encore de compte ? Créer un compte
                                     </button>
                                 </div>
                             )}

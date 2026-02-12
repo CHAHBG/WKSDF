@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Bars3Icon } from '@heroicons/react/24/outline';
+import { Bars3Icon, MoonIcon, SunIcon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const PAGE_LABELS = {
     '/': 'Dashboard',
@@ -10,15 +11,16 @@ const PAGE_LABELS = {
     '/transfers': 'Transferts',
     '/mobile-money': 'Mobile Money',
     '/sales': 'Ventes',
-    '/expenses': 'Depenses',
+    '/expenses': 'Dépenses',
     '/agents': 'Agents',
     '/transactions': 'Transactions',
-    '/reports': 'Rapports',
+    '/reports': 'Rapports & Analyses',
 };
 
 export default function Layout() {
     const location = useLocation();
     const { shopSettings, userProfile } = useAuth();
+    const { isDark, toggleTheme } = useTheme();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const pageLabel = useMemo(() => {
@@ -35,7 +37,7 @@ export default function Layout() {
     }, []);
 
     const shopName = shopSettings?.shop_name || 'Wakeur Sokhna';
-    const roleLabel = userProfile?.role === 'owner' ? 'Proprietaire' : 'Agent';
+    const roleLabel = userProfile?.role === 'owner' ? 'Propriétaire' : 'Agent';
 
     return (
         <div className="min-h-screen bg-slate-100">
@@ -60,6 +62,16 @@ export default function Layout() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                className="inline-flex h-9 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                aria-label={isDark ? 'Passer au mode clair' : 'Passer au mode sombre'}
+                            >
+                                {isDark ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+                                {isDark ? 'Clair' : 'Sombre'}
+                            </button>
+
                             <span className="hidden rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 sm:inline-flex">
                                 {todayLabel}
                             </span>
@@ -77,3 +89,4 @@ export default function Layout() {
         </div>
     );
 }
+

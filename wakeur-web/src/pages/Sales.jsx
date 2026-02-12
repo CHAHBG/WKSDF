@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -140,7 +140,7 @@ export default function Sales() {
             // Success
             setCart([]);
             fetchData(); // Refresh products to show new stock
-            alert('Vente effectuÃ©e avec succÃ¨s !');
+            alert('Vente effectuée avec succès !');
 
         } catch (error) {
             console.error('Checkout error:', error);
@@ -171,7 +171,7 @@ export default function Sales() {
                     <div className="flex justify-between items-center">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900">Point de Vente</h1>
-                            <p className="text-slate-500 text-sm">Selectionnez les produits a vendre</p>
+                            <p className="text-slate-500 text-sm">Sélectionnez les produits à vendre</p>
                         </div>
                         <div className="bg-amber-100 text-amber-800 px-4 py-2 rounded-lg font-bold text-sm border border-amber-200">
                             {products.length} Produits
@@ -194,7 +194,7 @@ export default function Sales() {
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
                         >
-                            <option value="All">Toutes les catÃ©gories</option>
+                            <option value="All">Toutes les catégories</option>
                             {categories.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
@@ -239,7 +239,7 @@ export default function Sales() {
                                 </div>
 
                                 <h3 className="font-bold text-slate-800 mb-1 line-clamp-2 h-10 text-sm">{product.name}</h3>
-                                <p className="text-xs text-slate-500">{product.category_name || 'Sans catÃ©gorie'}</p>
+                                <p className="text-xs text-slate-500">{product.category_name || 'Sans catégorie'}</p>
 
                                 {product.quantity > 0 && (
                                     <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -271,7 +271,7 @@ export default function Sales() {
                                 <ShoppingCartIcon className="w-10 h-10 opacity-20" />
                             </div>
                             <p className="text-sm font-medium">Votre panier est vide</p>
-                            <p className="text-xs text-slate-400 text-center px-8">Selectionnez des produits a gauche pour commencer une vente</p>
+                            <p className="text-xs text-slate-400 text-center px-8">Sélectionnez des produits à gauche pour commencer une vente</p>
                         </div>
                     ) : (
                         cart.map(item => (
@@ -315,7 +315,7 @@ export default function Sales() {
 
                 <div className="p-5 border-t border-slate-100 bg-slate-50/80 backdrop-blur-sm rounded-b-xl space-y-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">Total a payer</span>
+                        <span className="text-slate-500 font-medium">Total à payer</span>
                         <span className="text-3xl font-bold text-slate-900 font-mono tracking-tight">
                             {(cartTotal || 0).toLocaleString()} <span className="text-lg text-slate-500 font-sans">F</span>
                         </span>
@@ -343,4 +343,5 @@ export default function Sales() {
         </div>
     );
 }
+
 
