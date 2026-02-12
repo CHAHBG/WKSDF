@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -11,9 +12,15 @@ import {
     Title,
     Tooltip,
     Legend,
-    ArcElement
+    ArcElement,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import {
+    BanknotesIcon,
+    CubeIcon,
+    ExclamationTriangleIcon,
+    ShoppingCartIcon,
+} from '@heroicons/react/24/outline';
 
 ChartJS.register(
     CategoryScale,
@@ -27,8 +34,21 @@ ChartJS.register(
     ArcElement
 );
 
+const NUMBER_FORMATTER = new Intl.NumberFormat('fr-FR');
+
+const toNumber = (value) => Number(value) || 0;
+const formatAmount = (value = 0) => NUMBER_FORMATTER.format(Math.round(toNumber(value)));
+const formatCurrency = (value = 0) => `${formatAmount(value)} CFA`;
+
+const isValidDate = (value) => {
+    if (!value) return false;
+    const parsed = new Date(value);
+    return !Number.isNaN(parsed.getTime());
+};
+
 export default function Dashboard() {
     const { user } = useAuth();
+    const { isDark } = useTheme();
     const [stats, setStats] = useState({
         totalProducts: 0,
         lowStock: 0,
@@ -37,23 +57,18 @@ export default function Dashboard() {
         thisWeekSales: 0,
         totalTransactions: 0,
         averageOrderValue: 0,
-        totalStockValue: 0
+        totalStockValue: 0,
     });
-    const [categoryData, setCategoryData] = useState(null);
-    const [salesTrendData, setSalesTrendData] = useState(null);
-    const [monthlySalesData, setMonthlySalesData] = useState(null);
+    const [categoryBreakdown, setCategoryBreakdown] = useState({ labels: [], values: [] });
+    const [salesTrend, setSalesTrend] = useState({ labels: [], values: [] });
+    const [monthlySales, setMonthlySales] = useState({ labels: [], values: [] });
     const [topProducts, setTopProducts] = useState([]);
     const [lowStockProducts, setLowStockProducts] = useState([]);
     const [shopName, setShopName] = useState('Wakeur Sokhna');
+    const [isLoading, setIsLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
-    useEffect(() => {
-        if (user) {
-            fetchData();
-            fetchShopSettings();
-        }
-    }, [user]);
-
-    const fetchShopSettings = async () => {
+    const fetchShopSettings = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from('shop_settings')
@@ -67,37 +82,44 @@ export default function Dashboard() {
                 setShopName(data.shop_name || 'Wakeur Sokhna');
             }
         } catch (error) {
-            console.error('Error fetching shop settings:', error);
+            console.error('Erreur lors du chargement des paramètres boutique :', error);
         }
-    };
+    }, []);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [productsRes, salesRes, saleItemsRes] = await Promise.all([
                 supabase.from('v_inventory_with_avoir').select('*'),
                 supabase.from('sales').select('*'),
-                supabase.from('sale_items').select('*')
+                supabase.from('sale_items').select('*'),
             ]);
+
+            if (productsRes.error) throw productsRes.error;
+            if (salesRes.error) throw salesRes.error;
 
             const products = productsRes.data || [];
             const sales = salesRes.data || [];
-            const saleItems = saleItemsRes.data || [];
+            const saleItems = saleItemsRes.error ? [] : (saleItemsRes.data || []);
 
-            // Calculate Stats
-            const totalProducts = products.length;
-            const lowStock = products.filter(p => p.quantity <= (p.min_stock_level || 5)).length;
-            const totalStockValue = products.reduce((sum, p) => sum + (p.quantity * p.unit_price), 0);
-
-            // Sales Statistics
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-            const totalRevenue = sales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
-            const todaySales = sales.filter(s => new Date(s.created_at) >= today)
-                .reduce((sum, sale) => sum + (sale.amount || 0), 0);
-            const thisWeekSales = sales.filter(s => new Date(s.created_at) >= weekAgo)
-                .reduce((sum, sale) => sum + (sale.amount || 0), 0);
+            const totalProducts = products.length;
+            const lowStock = products.filter((p) => {
+                const threshold = p.min_stock_level ? toNumber(p.min_stock_level) : 5;
+                return toNumber(p.quantity) <= threshold;
+            }).length;
+            const totalStockValue = products.reduce((sum, p) => sum + toNumber(p.quantity) * toNumber(p.unit_price), 0);
+            const totalRevenue = sales.reduce((sum, sale) => sum + toNumber(sale.amount), 0);
+
+            const todaySales = sales
+                .filter((sale) => isValidDate(sale.created_at) && new Date(sale.created_at) >= today)
+                .reduce((sum, sale) => sum + toNumber(sale.amount), 0);
+
+            const thisWeekSales = sales
+                .filter((sale) => isValidDate(sale.created_at) && new Date(sale.created_at) >= weekAgo)
+                .reduce((sum, sale) => sum + toNumber(sale.amount), 0);
 
             setStats({
                 totalProducts,
@@ -107,92 +129,62 @@ export default function Dashboard() {
                 thisWeekSales,
                 totalTransactions: sales.length,
                 averageOrderValue: sales.length > 0 ? totalRevenue / sales.length : 0,
-                totalStockValue
+                totalStockValue,
             });
 
-            // Category Distribution
-            const catMap = {};
-            products.forEach(item => {
-                const cat = item.category_name || 'Autre';
-                if (!catMap[cat]) catMap[cat] = 0;
-                catMap[cat] += (item.quantity * item.unit_price);
+            const categoryMap = {};
+            products.forEach((product) => {
+                const category = product.category_name || 'Sans catégorie';
+                if (!categoryMap[category]) {
+                    categoryMap[category] = 0;
+                }
+                categoryMap[category] += toNumber(product.quantity) * toNumber(product.unit_price);
             });
 
-            const categoryLabels = Object.keys(catMap);
-            const categoryValues = Object.values(catMap);
-
-            setCategoryData({
-                labels: categoryLabels,
-                datasets: [{
-                    label: 'Valeur par Catégorie (CFA)',
-                    data: categoryValues,
-                    backgroundColor: [
-                        'rgba(79, 98, 120, 0.45)',
-                        'rgba(119, 106, 84, 0.45)',
-                        'rgba(133, 91, 91, 0.45)',
-                        'rgba(85, 118, 112, 0.45)',
-                        'rgba(109, 99, 130, 0.45)',
-                        'rgba(128, 123, 96, 0.45)',
-                    ],
-                    borderColor: [
-                        'rgba(79, 98, 120, 1)',
-                        'rgba(119, 106, 84, 1)',
-                        'rgba(133, 91, 91, 1)',
-                        'rgba(85, 118, 112, 1)',
-                        'rgba(109, 99, 130, 1)',
-                        'rgba(128, 123, 96, 1)',
-                    ],
-                    borderWidth: 1,
-                }],
+            setCategoryBreakdown({
+                labels: Object.keys(categoryMap),
+                values: Object.values(categoryMap),
             });
 
-            // Sales Trend (Last 7 Days)
             const last7Days = [];
             const salesByDay = {};
 
-            for (let i = 6; i >= 0; i--) {
+            for (let i = 6; i >= 0; i -= 1) {
                 const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-                const dateStr = date.toISOString().split('T')[0];
-                last7Days.push(dateStr);
-                salesByDay[dateStr] = 0;
+                const dateKey = date.toISOString().split('T')[0];
+                last7Days.push(dateKey);
+                salesByDay[dateKey] = 0;
             }
 
-            sales.forEach(sale => {
+            sales.forEach((sale) => {
+                if (!isValidDate(sale.created_at)) return;
                 const saleDate = new Date(sale.created_at).toISOString().split('T')[0];
                 if (Object.prototype.hasOwnProperty.call(salesByDay, saleDate)) {
-                    salesByDay[saleDate] += sale.amount || 0;
+                    salesByDay[saleDate] += toNumber(sale.amount);
                 }
             });
 
-            setSalesTrendData({
-                labels: last7Days.map(d => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })),
-                datasets: [{
-                    label: 'Ventes (CFA)',
-                    data: last7Days.map(d => salesByDay[d]),
-                    borderColor: 'rgb(79, 98, 120)',
-                    backgroundColor: 'rgba(79, 98, 120, 0.2)',
-                    tension: 0.3
-                }]
+            setSalesTrend({
+                labels: last7Days.map((d) => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })),
+                values: last7Days.map((d) => salesByDay[d]),
             });
 
-            // Top Selling Products
             const productSalesMap = {};
-            saleItems.forEach(item => {
-                if (item.product_id) {
-                    if (!productSalesMap[item.product_id]) {
-                        productSalesMap[item.product_id] = { revenue: 0, quantity: 0 };
-                    }
-                    productSalesMap[item.product_id].revenue += item.total_price || 0;
-                    productSalesMap[item.product_id].quantity += item.quantity || 0;
+            saleItems.forEach((item) => {
+                if (!item.product_id) return;
+                if (!productSalesMap[item.product_id]) {
+                    productSalesMap[item.product_id] = { revenue: 0, quantity: 0 };
                 }
+                productSalesMap[item.product_id].revenue += toNumber(item.total_price);
+                productSalesMap[item.product_id].quantity += toNumber(item.quantity);
             });
 
             const topSelling = Object.entries(productSalesMap)
-                .map(([productId, stats]) => {
-                    const product = products.find(p => p.id === productId);
+                .map(([productId, productStats]) => {
+                    const product = products.find((p) => String(p.id) === String(productId));
                     return {
                         name: product?.name || 'Produit inconnu',
-                        ...stats
+                        ...productStats,
                     };
                 })
                 .sort((a, b) => b.revenue - a.revenue)
@@ -200,274 +192,373 @@ export default function Dashboard() {
 
             setTopProducts(topSelling);
 
-            // Low Stock Products
             const lowStockItems = products
-                .filter(p => p.quantity <= (p.min_stock_level || 5))
-                .sort((a, b) => a.quantity - b.quantity)
+                .filter((p) => {
+                    const threshold = p.min_stock_level ? toNumber(p.min_stock_level) : 5;
+                    return toNumber(p.quantity) <= threshold;
+                })
+                .sort((a, b) => toNumber(a.quantity) - toNumber(b.quantity))
                 .slice(0, 5);
             setLowStockProducts(lowStockItems);
 
-            // Monthly Sales Trend (Last 6 Months)
             const monthsData = [];
             const monthLabels = [];
 
-            for (let i = 5; i >= 0; i--) {
+            for (let i = 5; i >= 0; i -= 1) {
                 const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
                 const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-                const monthSales = sales
-                    .filter(s => {
-                        const saleDate = new Date(s.created_at);
+                const monthSalesValue = sales
+                    .filter((sale) => {
+                        if (!isValidDate(sale.created_at)) return false;
+                        const saleDate = new Date(sale.created_at);
                         return saleDate >= monthStart && saleDate <= monthEnd;
                     })
-                    .reduce((sum, sale) => sum + (sale.amount || 0), 0);
+                    .reduce((sum, sale) => sum + toNumber(sale.amount), 0);
 
-                monthsData.push(monthSales);
+                monthsData.push(monthSalesValue);
                 monthLabels.push(date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }));
             }
 
-            setMonthlySalesData({
+            setMonthlySales({
                 labels: monthLabels,
-                datasets: [{
-                    label: 'Ventes Mensuelles (CFA)',
-                    data: monthsData,
-                    backgroundColor: 'rgba(95, 112, 134, 0.5)',
-                    borderColor: 'rgb(95, 112, 134)',
-                    borderWidth: 2
-                }]
+                values: monthsData,
             });
-
         } catch (error) {
-            console.error("Error loading dashboard data", error);
+            console.error('Erreur lors du chargement du tableau de bord :', error);
         }
-    };
+    }, []);
+
+    const loadDashboardData = useCallback(async () => {
+        setIsLoading(true);
+        await Promise.all([fetchData(), fetchShopSettings()]);
+        setLastUpdated(new Date());
+        setIsLoading(false);
+    }, [fetchData, fetchShopSettings]);
+
+    useEffect(() => {
+        if (!user) return;
+        loadDashboardData();
+    }, [user, loadDashboardData]);
+
+    const chartTextColor = isDark ? '#d2d9e6' : '#475569';
+    const chartGridColor = isDark ? 'rgba(134, 148, 174, 0.24)' : 'rgba(148, 163, 184, 0.25)';
+    const chartBorderColor = isDark ? '#9fb0cb' : '#607690';
+    const categoryPalette = useMemo(() => (
+        isDark
+            ? ['rgba(122, 145, 186, 0.68)', 'rgba(167, 154, 123, 0.68)', 'rgba(137, 168, 152, 0.68)', 'rgba(165, 129, 134, 0.68)', 'rgba(140, 132, 176, 0.68)', 'rgba(126, 149, 141, 0.68)']
+            : ['rgba(90, 112, 145, 0.62)', 'rgba(141, 131, 102, 0.62)', 'rgba(92, 133, 123, 0.62)', 'rgba(141, 103, 108, 0.62)', 'rgba(112, 102, 145, 0.62)', 'rgba(115, 135, 126, 0.62)']
+    ), [isDark]);
+
+    const salesTrendData = useMemo(() => ({
+        labels: salesTrend.labels,
+        datasets: [
+            {
+                label: 'Ventes (CFA)',
+                data: salesTrend.values,
+                borderColor: chartBorderColor,
+                backgroundColor: isDark ? 'rgba(123, 141, 178, 0.24)' : 'rgba(100, 121, 150, 0.2)',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3.5,
+                pointHoverRadius: 5,
+                pointBackgroundColor: isDark ? '#d6e1f5' : '#4f637f',
+                pointBorderWidth: 0,
+            },
+        ],
+    }), [salesTrend, chartBorderColor, isDark]);
+
+    const categoryData = useMemo(() => ({
+        labels: categoryBreakdown.labels,
+        datasets: [
+            {
+                label: 'Valeur par catégorie (CFA)',
+                data: categoryBreakdown.values,
+                backgroundColor: categoryBreakdown.labels.map((_, index) => categoryPalette[index % categoryPalette.length]),
+                borderColor: isDark ? '#1f2432' : '#f3f5f9',
+                borderWidth: 2,
+                hoverOffset: 8,
+            },
+        ],
+    }), [categoryBreakdown, categoryPalette, isDark]);
+
+    const monthlySalesData = useMemo(() => ({
+        labels: monthlySales.labels,
+        datasets: [
+            {
+                label: 'Ventes mensuelles (CFA)',
+                data: monthlySales.values,
+                backgroundColor: isDark ? 'rgba(126, 143, 174, 0.62)' : 'rgba(102, 120, 149, 0.55)',
+                borderColor: chartBorderColor,
+                borderWidth: 1.2,
+                borderRadius: 8,
+                borderSkipped: false,
+                maxBarThickness: 38,
+            },
+        ],
+    }), [monthlySales, chartBorderColor, isDark]);
+
+    const cartesianChartOptions = useMemo(() => ({
+        maintainAspectRatio: false,
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                backgroundColor: isDark ? '#111625' : '#1f2937',
+                titleColor: '#f8fafc',
+                bodyColor: '#f8fafc',
+                padding: 10,
+                callbacks: {
+                    label: (context) => {
+                        const value = context.parsed.y ?? context.parsed ?? 0;
+                        return `${formatAmount(value)} CFA`;
+                    },
+                },
+            },
+        },
+        scales: {
+            x: {
+                grid: {
+                    color: 'transparent',
+                    drawBorder: false,
+                },
+                ticks: {
+                    color: chartTextColor,
+                    maxRotation: 0,
+                    minRotation: 0,
+                    font: {
+                        size: 11,
+                        weight: 500,
+                    },
+                },
+            },
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: chartGridColor,
+                    drawBorder: false,
+                },
+                ticks: {
+                    color: chartTextColor,
+                    callback: (value) => formatAmount(value),
+                    font: {
+                        size: 11,
+                    },
+                },
+            },
+        },
+    }), [chartGridColor, chartTextColor, isDark]);
+
+    const doughnutOptions = useMemo(() => ({
+        maintainAspectRatio: false,
+        responsive: true,
+        cutout: '58%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: chartTextColor,
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    boxWidth: 10,
+                    boxHeight: 10,
+                    padding: 16,
+                    font: {
+                        size: 12,
+                        weight: 500,
+                    },
+                },
+            },
+            tooltip: {
+                backgroundColor: isDark ? '#111625' : '#1f2937',
+                titleColor: '#f8fafc',
+                bodyColor: '#f8fafc',
+                padding: 10,
+                callbacks: {
+                    label: (context) => `${context.label}: ${formatAmount(context.parsed)} CFA`,
+                },
+            },
+        },
+    }), [chartTextColor, isDark]);
+
+    const hasSalesTrendData = salesTrend.values.some((value) => value > 0);
+    const hasCategoryData = categoryBreakdown.values.some((value) => value > 0);
+    const hasMonthlySalesData = monthlySales.values.some((value) => value > 0);
+
+    const metricCards = [
+        {
+            key: 'revenue',
+            label: 'Revenu total',
+            value: formatCurrency(stats.totalRevenue),
+            meta: `${stats.totalTransactions} transaction${stats.totalTransactions > 1 ? 's' : ''}`,
+            tone: 'slate',
+            icon: <BanknotesIcon className="h-5 w-5" />,
+        },
+        {
+            key: 'today',
+            label: 'Ventes du jour',
+            value: formatCurrency(stats.todaySales),
+            meta: `Semaine : ${formatCurrency(stats.thisWeekSales)}`,
+            tone: 'green',
+            icon: <ShoppingCartIcon className="h-5 w-5" />,
+        },
+        {
+            key: 'stockValue',
+            label: 'Valeur du stock',
+            value: formatCurrency(stats.totalStockValue),
+            meta: `${stats.totalProducts} produit${stats.totalProducts > 1 ? 's' : ''} en stock`,
+            tone: 'violet',
+            icon: <CubeIcon className="h-5 w-5" />,
+        },
+        {
+            key: 'alerts',
+            label: 'Alertes stock',
+            value: `${stats.lowStock}`,
+            meta: stats.lowStock > 0 ? 'Attention requise' : 'Aucune alerte',
+            tone: stats.lowStock > 0 ? 'red' : 'green',
+            icon: <ExclamationTriangleIcon className="h-5 w-5" />,
+        },
+    ];
 
     return (
-        <div>
-            <h1 className="text-3xl font-bold mb-8 text-gray-800">Tableau de Bord - {shopName}</h1>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Revenue Card */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Revenu Total</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
-                                {stats.totalRevenue.toLocaleString()} <span className="text-sm font-normal text-gray-500">CFA</span>
-                            </h3>
-                        </div>
-                        <div className="p-3 bg-blue-50 rounded-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-blue-600">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div className="mt-4 flex items-center text-sm">
-                        <span className="text-green-600 flex items-center font-medium bg-green-50 px-2 py-0.5 rounded-full">
-                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                            {stats.totalTransactions}
-                        </span>
-                        <span className="text-gray-400 ml-2">transactions</span>
-                    </div>
+        <div className="space-y-8">
+            <section className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{shopName}</p>
+                    <h1 className="mt-1 text-3xl font-bold text-slate-900">Vue d&apos;ensemble financière</h1>
                 </div>
-
-                {/* Today Sales Card */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Ventes Aujourd'hui</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
-                                {stats.todaySales.toLocaleString()} <span className="text-sm font-normal text-gray-500">CFA</span>
-                            </h3>
-                        </div>
-                        <div className="p-3 bg-green-50 rounded-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-green-600">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div className="mt-4 flex items-center text-sm">
-                        <span className="text-gray-500">
-                            Cette semaine: <span className="font-semibold text-gray-900">{stats.thisWeekSales.toLocaleString()}</span>
-                        </span>
-                    </div>
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+                    {lastUpdated ? `Mise à jour : ${lastUpdated.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : 'Chargement...'}
                 </div>
+            </section>
 
-                {/* Stock Value Card */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Valeur du Stock</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
-                                {stats.totalStockValue.toLocaleString()} <span className="text-sm font-normal text-gray-500">CFA</span>
-                            </h3>
+            <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                {metricCards.map((card) => (
+                    <article key={card.key} className={`metric-card metric-card--${card.tone}`}>
+                        <div className="metric-card__head">
+                            <p className="metric-card__label">{card.label}</p>
+                            <span className="metric-card__icon">{card.icon}</span>
                         </div>
-                        <div className="p-3 bg-purple-50 rounded-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-600">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div className="mt-4 flex items-center text-sm">
-                        <span className="text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full">
-                            {stats.totalProducts}
-                        </span>
-                        <span className="text-gray-400 ml-2">produits en stock</span>
-                    </div>
-                </div>
+                        <p className="metric-card__value">{card.value}</p>
+                        <p className="metric-card__meta">{card.meta}</p>
+                    </article>
+                ))}
+            </section>
 
-                {/* Low Stock Card */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Alertes Stock</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-2 font-mono">
-                                {stats.lowStock}
-                            </h3>
-                        </div>
-                        <div className={`p-3 rounded-lg ${stats.lowStock > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-6 h-6 ${stats.lowStock > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                            </svg>
-                        </div>
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                <article className="chart-card">
+                    <div className="chart-card__header">
+                        <h2 className="chart-card__title">Tendance des ventes</h2>
+                        <p className="chart-card__subtitle">7 derniers jours</p>
                     </div>
-                    <div className="mt-4 flex items-center text-sm">
-                        {stats.lowStock > 0 ? (
-                            <span className="text-red-600 font-medium flex items-center">
-                                <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
-                                Attention requise
-                            </span>
+                    <div className="chart-card__canvas">
+                        {!isLoading && hasSalesTrendData ? (
+                            <Line data={salesTrendData} options={cartesianChartOptions} />
                         ) : (
-                            <span className="text-green-600 font-medium flex items-center">
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                Stock sain
-                            </span>
+                            <div className="chart-placeholder">Pas encore de ventes sur cette période.</div>
                         )}
                     </div>
-                </div>
-            </div>
+                </article>
 
-            {/* Charts Row 1 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-4">Tendance des Ventes (7 jours)</h2>
-                    {salesTrendData ? (
-                        <div className="h-64">
-                            <Line data={salesTrendData} options={{
-                                maintainAspectRatio: false,
-                                responsive: true,
-                                plugins: {
-                                    legend: { display: false }
-                                }
-                            }} />
-                        </div>
-                    ) : (
-                        <p>Chargement...</p>
-                    )}
-                </div>
+                <article className="chart-card">
+                    <div className="chart-card__header">
+                        <h2 className="chart-card__title">Répartition par catégorie</h2>
+                        <p className="chart-card__subtitle">Valorisation actuelle du stock</p>
+                    </div>
+                    <div className="chart-card__canvas">
+                        {!isLoading && hasCategoryData ? (
+                            <Doughnut data={categoryData} options={doughnutOptions} />
+                        ) : (
+                            <div className="chart-placeholder">Aucune donnée de stock à afficher.</div>
+                        )}
+                    </div>
+                </article>
+            </section>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-4">Distribution par Catégorie</h2>
-                    {categoryData ? (
-                        <div className="h-64 flex justify-center">
-                            <Doughnut data={categoryData} options={{
-                                maintainAspectRatio: false,
-                                responsive: true
-                            }} />
-                        </div>
-                    ) : (
-                        <p>Chargement...</p>
-                    )}
-                </div>
-            </div>
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                <article className="chart-card">
+                    <div className="chart-card__header">
+                        <h2 className="chart-card__title">Ventes mensuelles</h2>
+                        <p className="chart-card__subtitle">6 derniers mois</p>
+                    </div>
+                    <div className="chart-card__canvas">
+                        {!isLoading && hasMonthlySalesData ? (
+                            <Bar data={monthlySalesData} options={cartesianChartOptions} />
+                        ) : (
+                            <div className="chart-placeholder">Aucune vente mensuelle enregistrée.</div>
+                        )}
+                    </div>
+                </article>
 
-            {/* Charts Row 2 - Monthly Sales & Low Stock */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Monthly Sales Trend */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-4">Ventes Mensuelles (6 Derniers Mois)</h2>
-                    {monthlySalesData ? (
-                        <div className="h-64">
-                            <Bar data={monthlySalesData} options={{
-                                maintainAspectRatio: false,
-                                responsive: true,
-                                plugins: {
-                                    legend: { display: false }
-                                }
-                            }} />
-                        </div>
-                    ) : (
-                        <p>Chargement...</p>
-                    )}
-                </div>
-
-                {/* Low Stock Alert */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-4">Alertes Stock Faible</h2>
+                <article className="chart-card">
+                    <div className="chart-card__header">
+                        <h2 className="chart-card__title">Alertes stock faible</h2>
+                        <p className="chart-card__subtitle">{stats.lowStock} produit{stats.lowStock > 1 ? 's' : ''} concerné{stats.lowStock > 1 ? 's' : ''}</p>
+                    </div>
                     {lowStockProducts.length > 0 ? (
                         <div className="space-y-3">
-                            {lowStockProducts.map((product, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                                        <p className="text-sm text-gray-600">{product.category_name}</p>
+                            {lowStockProducts.map((product) => (
+                                <div key={product.id} className="stock-alert-row">
+                                    <div>
+                                        <p className="font-semibold text-slate-900">{product.name}</p>
+                                        <p className="text-sm text-slate-500">{product.category_name || 'Sans catégorie'}</p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-2xl font-bold text-red-600">{product.quantity}</p>
-                                        <p className="text-xs text-gray-500">en stock</p>
+                                    <div className="stock-alert-row__count">
+                                        {formatAmount(product.quantity)}
+                                        <span>en stock</span>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-gray-500 text-center py-8">Aucune alerte de stock faible</p>
+                        <div className="chart-placeholder">Aucune alerte de stock faible.</div>
                     )}
-                </div>
-            </div>
+                </article>
+            </section>
 
-            {/* Top Products Table */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-xl font-bold mb-4">Top 5 Produits Vendus</h2>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rang</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité Vendue</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {topProducts.map((product, index) => (
-                                <tr key={index} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold">
-                                            {index + 1}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {product.name}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                        {product.quantity}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                                        {product.revenue.toLocaleString()} CFA
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {topProducts.length === 0 && (
-                        <p className="text-center text-gray-500 py-8">Aucune vente enregistrée</p>
-                    )}
+            <section className="chart-card">
+                <div className="chart-card__header">
+                    <h2 className="chart-card__title">Top 5 produits vendus</h2>
+                    <p className="chart-card__subtitle">Classement par chiffre d&apos;affaires</p>
                 </div>
-            </div>
+                {topProducts.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                            <thead className="border-b border-slate-200 text-left">
+                                <tr className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                                    <th className="px-4 py-3">Rang</th>
+                                    <th className="px-4 py-3">Produit</th>
+                                    <th className="px-4 py-3">Quantité vendue</th>
+                                    <th className="px-4 py-3">Revenu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {topProducts.map((product, index) => (
+                                    <tr key={`${product.name}-${index}`} className="border-b border-slate-100 last:border-b-0">
+                                        <td className="px-4 py-3">
+                                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
+                                                {index + 1}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-slate-900">{product.name}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-600">{formatAmount(product.quantity)}</td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-slate-800">{formatCurrency(product.revenue)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="chart-placeholder">Aucune vente enregistrée pour le moment.</div>
+                )}
+            </section>
         </div>
     );
 }
-
-
