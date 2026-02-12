@@ -12,7 +12,9 @@ npm install
 2. Configure `.env`
 ```bash
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+# optional backward compatibility:
+# VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 VITE_API_URL=http://localhost:5000/api
 ```
 
@@ -36,6 +38,14 @@ Supabase configuration required:
    - `http://localhost:5173/reset-password`
 
 If the redirect URL is missing, reset password emails will fail.
+
+## Deployment note (important)
+
+Vite reads `VITE_*` variables at build time. For Netlify/Vercel/Render:
+
+1. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the hosting dashboard environment variables.
+2. Trigger a new deploy after saving variables.
+3. Never use `sb_secret_*` in frontend variables.
 
 ## Security improvements in this frontend
 
