@@ -1,43 +1,48 @@
-# Wakeur Sokhna Daba Falilou - Backend
+# Wakeur Backend API
 
-## Setup Instructions
+Express API for Wakeur inventory, sales, transfers, and auth-protected endpoints.
 
-1.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+## Setup
 
-2.  **Firebase Configuration**
-    - Go to the [Firebase Console](https://console.firebase.google.com/).
-    - Create a new project (if you haven't already).
-    - Go to **Project Settings > Service Accounts**.
-    - Click **Generate New Private Key**.
-    - Save the downloaded JSON file as `serviceAccountKey.json` inside the `config/` folder.
-    - **Important:** Do not commit this file to version control.
+1. Install dependencies
+```bash
+npm install
+```
 
-3.  **Environment Variables**
-    - Open `.env` file.
-    - Update `FIREBASE_DATABASE_URL` with your Realtime Database URL (found in Firebase Console > Realtime Database).
+2. Configure environment variables in `.env`
+```bash
+PORT=5000
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 
-4.  **Run Server**
-    - Development mode (auto-restart):
-      ```bash
-      npm run dev
-      ```
-    - Production mode:
-      ```bash
-      npm start
-      ```
+# Optional security config
+TRUST_PROXY=false
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8081
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=120
+AUTH_RATE_LIMIT_WINDOW_MS=900000
+AUTH_RATE_LIMIT_MAX=10
+```
 
-## API Endpoints
+3. Run
+```bash
+npm run dev
+```
 
-- **Auth:** `GET /api/auth/profile` (Requires Bearer Token)
-- **Products:**
-    - `GET /api/products`
-    - `POST /api/products` (Requires Auth)
-- **Transfers:**
-    - `GET /api/transfers` (Requires Auth)
-    - `POST /api/transfers` (Requires Auth)
-- **Sales:**
-    - `GET /api/sales` (Requires Auth)
-    - `POST /api/sales` (Requires Auth)
+## Security hardening included
+
+- Strict CORS allowlist
+- Basic API security headers
+- Request payload size limit
+- Global and auth-specific rate limiting
+- Bearer token validation middleware for protected routes
+- Centralized 404 and error responses
+
+## Main endpoints
+
+- `GET /health`
+- `GET /api/auth/profile` (Bearer token required)
+- `GET /api/products`
+- `POST /api/products` (Bearer token required)
+- `PUT /api/products/:id` (Bearer token required)
+- `DELETE /api/products/:id` (Bearer token required)

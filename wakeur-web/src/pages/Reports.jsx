@@ -22,7 +22,7 @@ export default function Reports() {
     };
 
     const getDataUrl = (url) => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             if (!url) { resolve(null); return; }
             const img = new Image();
             img.crossOrigin = 'Anonymous';

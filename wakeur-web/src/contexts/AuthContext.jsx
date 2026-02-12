@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 
@@ -12,7 +13,6 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         // Check for Agent Session first
         const storedAgent = localStorage.getItem('wakeur_agent_session');
-        console.log('AuthContext mount. Stored agent:', storedAgent);
 
         if (storedAgent) {
             try {
@@ -21,20 +21,31 @@ export const AuthProvider = ({ children }) => {
             } catch (e) {
                 console.error("Invalid agent session", e);
                 localStorage.removeItem('wakeur_agent_session');
-                checkUserSession();
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    setUser(session?.user ?? null);
+                    if (session?.user) {
+                        loadUserProfile(session.user.id);
+                    } else {
+                        setLoading(false);
+                    }
+                });
             }
         } else {
-            checkUserSession();
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                setUser(session?.user ?? null);
+                if (session?.user) {
+                    loadUserProfile(session.user.id);
+                } else {
+                    setLoading(false);
+                }
+            });
         }
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            console.log('AuthStateChange event:', _event, 'Session:', session?.user?.id);
             const hasAgentSession = localStorage.getItem('wakeur_agent_session');
-            console.log('Has agent session in storage:', hasAgentSession);
 
             if (!hasAgentSession) {
-                console.log('No agent session, updating user from Supabase session');
                 setUser(session?.user ?? null);
                 if (session?.user) {
                     loadUserProfile(session.user.id);
@@ -43,27 +54,13 @@ export const AuthProvider = ({ children }) => {
                     setShopSettings(null);
                     setLoading(false);
                 }
-            } else {
-                console.log('Agent session exists, ignoring Supabase auth change');
             }
         });
 
         return () => subscription.unsubscribe();
     }, []);
 
-    const checkUserSession = () => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                loadUserProfile(session.user.id);
-            } else {
-                setLoading(false);
-            }
-        });
-    };
-
     const setAgentSession = async (agent) => {
-        console.log('Setting agent session for:', agent.id);
         setUser({ id: agent.id, role: 'agent', email: 'agent@wakeur.com' }); // Mock user object
         setUserProfile({
             id: agent.id,
@@ -83,12 +80,10 @@ export const AuthProvider = ({ children }) => {
             setShopSettings(shop);
         }
 
-        console.log('Agent session set, setting loading to false');
         setLoading(false);
     };
 
     const loginAsAgent = async (phone, code) => {
-        console.log('Attempting agent login:', phone);
         setLoading(true);
         try {
             // Sanitize phone number
@@ -108,11 +103,9 @@ export const AuthProvider = ({ children }) => {
 
             if (!data) throw new Error('Identifiants incorrects');
 
-            console.log('Agent found:', data.id);
             // Store session
             localStorage.setItem('wakeur_agent_session', JSON.stringify(data));
             await setAgentSession(data);
-            console.log('Agent login successful');
             return { success: true };
         } catch (error) {
             console.error('Agent login error:', error);

@@ -3,11 +3,13 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Import screens
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import MainTabNavigator from './navigation/MainTabNavigator';
 import AddProductScreen from './screens/AddProductScreen';
 import EditProductScreen from './screens/EditProductScreen';
@@ -22,6 +24,25 @@ import CreateTransactionScreen from './screens/CreateTransactionScreen';
 import AnimatedSplashScreen from './screens/AnimatedSplashScreen';
 
 const Stack = createStackNavigator();
+const linking = {
+  prefixes: [Linking.createURL('/'), 'wakeur://'],
+  config: {
+    screens: {
+      Login: 'login',
+      SignUp: 'signup',
+      ResetPassword: 'reset-password',
+      ShopSetup: 'shop-setup',
+      Main: '',
+      AddProduct: 'add-product',
+      EditProduct: 'edit-product',
+      TransactionEntry: 'transaction-entry',
+      CreateTransaction: 'create-transaction',
+      DailyClosing: 'daily-closing',
+      AgentManagement: 'agent-management',
+      Analytics: 'analytics',
+    },
+  },
+};
 
 const AppContent = () => {
   const { user, userProfile, loading } = useAuth();
@@ -40,6 +61,7 @@ const AppContent = () => {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       </Stack.Navigator>
     );
   }
@@ -49,6 +71,7 @@ const AppContent = () => {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="ShopSetup" component={ShopSetupScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       </Stack.Navigator>
     );
   }
@@ -64,6 +87,7 @@ const AppContent = () => {
       <Stack.Screen name="DailyClosing" component={DailyClosingScreen} />
       <Stack.Screen name="AgentManagement" component={AgentManagementScreen} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
     </Stack.Navigator>
   );
 };
@@ -72,7 +96,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
           <AppContent />
         </NavigationContainer>
       </AuthProvider>

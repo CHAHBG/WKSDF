@@ -3,6 +3,7 @@
     "name": "Ness",
     "slug": "ness-shop",
     "version": "1.0.0",
+    "scheme": "wakeur",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,7 +21,21 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "wakeur"
+            }
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

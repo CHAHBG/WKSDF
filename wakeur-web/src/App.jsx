@@ -10,6 +10,7 @@ import MobileMoney from './pages/MobileMoney';
 import Sales from './pages/Sales';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import ResetPassword from './pages/ResetPassword';
 import AgentManagement from './pages/AgentManagement';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
@@ -17,7 +18,6 @@ import Expenses from './pages/Expenses';
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
-  console.log('AppRoutes render. User:', user?.id, 'Loading:', loading);
 
   if (loading) {
     return (
@@ -29,19 +29,23 @@ const AppRoutes = () => {
 
   return (
     <Routes>
+      <Route path="/reset-password" element={<ResetPassword />} />
+
       {user ? (
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="transfers" element={<Transfers />} />
-          <Route path="mobile-money" element={<MobileMoney />} />
-          <Route path="sales" element={<Sales />} />
-          <Route path="transactions" element={<Transactions />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="expenses" element={<Expenses />} />
-          <Route path="agents" element={<AgentManagement />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
+        <>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="transfers" element={<Transfers />} />
+            <Route path="mobile-money" element={<MobileMoney />} />
+            <Route path="sales" element={<Sales />} />
+            <Route path="transactions" element={<Transactions />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="agents" element={<AgentManagement />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </>
       ) : (
         <>
           <Route path="/login" element={<Login />} />

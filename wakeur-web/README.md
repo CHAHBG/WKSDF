@@ -1,16 +1,45 @@
-# React + Vite
+# Wakeur Web App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for Wakeur shop management.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. Install dependencies
+```bash
+npm install
+```
 
-## React Compiler
+2. Configure `.env`
+```bash
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+VITE_API_URL=http://localhost:5000/api
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+3. Run
+```bash
+npm run dev
+```
 
-## Expanding the ESLint configuration
+## Auth + reset password flow
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Login page: `src/pages/Login.jsx`
+- Reset page: `src/pages/ResetPassword.jsx`
+- Route registration: `src/App.jsx`
+
+Supabase configuration required:
+
+1. Open Supabase Dashboard -> Authentication -> URL Configuration.
+2. Add your web URL(s) in **Redirect URLs**.
+3. Include your reset route, for example:
+   - `https://your-domain.com/reset-password`
+   - `http://localhost:5173/reset-password`
+
+If the redirect URL is missing, reset password emails will fail.
+
+## Security improvements in this frontend
+
+- Cooldown/temporary lock after repeated admin login failures
+- Safer reset-password messaging and cooldown controls
+- Strong password requirements on reset
+- Axios API client now sends bearer tokens automatically

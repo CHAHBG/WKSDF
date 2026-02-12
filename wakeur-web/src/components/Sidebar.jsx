@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Sidebar() {
@@ -13,7 +12,6 @@ export default function Sidebar() {
         navigate('/login');
     };
 
-    const isAgent = userProfile?.role === 'agent';
     const shopName = shopSettings?.shop_name || 'Wakeur Sokhna';
     const shopNameParts = shopName.split(' ');
     const firstName = shopNameParts[0];

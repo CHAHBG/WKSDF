@@ -76,7 +76,6 @@ export const AuthProvider = ({ children }) => {
         try {
             // Sanitize phone number (remove spaces, dashes, parentheses)
             const sanitizedPhone = phone.replace(/\D/g, '');
-            console.log('Attempting agent login with:', sanitizedPhone, 'code:', code);
 
             // Call the secure RPC function
             const { data, error } = await supabase
@@ -91,8 +90,6 @@ export const AuthProvider = ({ children }) => {
             }
 
             if (!data) throw new Error('Identifiants incorrects');
-
-            console.log('Agent found:', data.id);
 
             // Store session
             await AsyncStorage.setItem('wakeur_agent_session', JSON.stringify(data));

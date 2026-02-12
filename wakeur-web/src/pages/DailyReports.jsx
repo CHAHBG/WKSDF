@@ -232,7 +232,7 @@ export default function DailyReports() {
             doc.text("Détail des Espèces", 14, finalY);
 
             const cashData = Object.entries(report.cash_denominations)
-                .filter(([_, v]) => v > 0)
+                .filter(([, v]) => v > 0)
                 .map(([k, v]) => {
                     const label = k.startsWith('b') ? 'Billet' : 'Pièce';
                     const value = parseInt(k.substring(1));
@@ -260,7 +260,7 @@ export default function DailyReports() {
             doc.text("Soldes Mobile Money", 14, finalY);
 
             const mmData = Object.entries(report.mobile_money_balances)
-                .filter(([_, v]) => v > 0)
+                .filter(([, v]) => v > 0)
                 .map(([k, v]) => [k.replace('_', ' ').toUpperCase(), `${v.toLocaleString()} F`]);
 
             if (mmData.length > 0) {
@@ -595,7 +595,7 @@ export default function DailyReports() {
                                     </h4>
                                     <div className="grid grid-cols-2 gap-3">
                                         {Object.entries(selectedReport.mobile_money_balances)
-                                            .filter(([_, v]) => v > 0)
+                                            .filter(([, v]) => v > 0)
                                             .map(([key, value]) => (
                                                 <div key={key} className="bg-white p-3 rounded-lg border border-blue-100">
                                                     <p className="text-xs font-bold text-gray-600 mb-1 capitalize">{key.replace('_', ' ')}</p>

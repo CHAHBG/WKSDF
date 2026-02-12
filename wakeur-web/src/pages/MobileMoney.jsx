@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 
 export default function MobileMoney() {
@@ -36,13 +36,7 @@ export default function MobileMoney() {
         fetchTransactions();
     }, []);
 
-    useEffect(() => {
-        if (dailyReport && transactions.length >= 0) {
-            calculateCurrentBalances();
-        }
-    }, [dailyReport, transactions]);
-
-    const calculateCurrentBalances = () => {
+    const calculateCurrentBalances = useCallback(() => {
         if (!dailyReport) return;
 
         let openingCash = {};
@@ -81,7 +75,11 @@ export default function MobileMoney() {
         });
 
         setCurrentBalances({ cash: currentCash, platforms: currentPlatforms });
-    };
+    }, [dailyReport, transactions]);
+
+    useEffect(() => {
+        calculateCurrentBalances();
+    }, [calculateCurrentBalances]);
 
     const triggerAnimation = (key) => {
         setAnimatingBalances(prev => new Set([...prev, key]));
@@ -103,6 +101,10 @@ export default function MobileMoney() {
                 .eq('report_date', today)
                 .eq('is_closed', false)
                 .single();
+
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
 
             if (!data) {
                 setShowOpeningModal(true);

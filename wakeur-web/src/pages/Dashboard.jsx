@@ -157,7 +157,7 @@ export default function Dashboard() {
 
             sales.forEach(sale => {
                 const saleDate = new Date(sale.created_at).toISOString().split('T')[0];
-                if (salesByDay.hasOwnProperty(saleDate)) {
+                if (Object.prototype.hasOwnProperty.call(salesByDay, saleDate)) {
                     salesByDay[saleDate] += sale.amount || 0;
                 }
             });
@@ -243,7 +243,7 @@ export default function Dashboard() {
 
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-8 text-gray-800">Tableau de Bord</h1>
+            <h1 className="text-3xl font-bold mb-8 text-gray-800">Tableau de Bord - {shopName}</h1>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
