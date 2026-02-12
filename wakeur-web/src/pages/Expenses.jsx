@@ -44,7 +44,7 @@ export default function Expenses() {
         try {
             const [expensesRes, financialsRes] = await Promise.all([
                 supabase.from('expenses').select('*').order('expense_date', { ascending: false }),
-                supabase.from('monthly_financials').select('*').order('month', { ascending: false }).limit(1).single()
+                supabase.from('monthly_financials').select('*').order('month', { ascending: false }).limit(1).maybeSingle()
             ]);
 
             setExpenses(expensesRes.data || []);

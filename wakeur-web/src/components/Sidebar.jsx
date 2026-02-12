@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     const navigate = useNavigate();
     const location = useLocation();
     const { shopSettings, userProfile, signOut } = useAuth();
@@ -14,7 +15,7 @@ export default function Sidebar() {
 
     const shopName = shopSettings?.shop_name || 'Wakeur Sokhna';
     const shopNameParts = shopName.split(' ');
-    const firstName = shopNameParts[0];
+    const firstName = shopNameParts[0] || 'Wakeur';
     const lastName = shopNameParts.slice(1).join(' ');
 
     const mainMenuItems = [
@@ -23,7 +24,7 @@ export default function Sidebar() {
         { path: '/transfers', label: 'Transferts', allowedRoles: ['owner'] },
         { path: '/mobile-money', label: 'Mobile Money', allowedRoles: ['owner', 'agent'] },
         { path: '/sales', label: 'Ventes', allowedRoles: ['owner', 'agent'] },
-        { path: '/expenses', label: 'Dépenses', allowedRoles: ['owner'] },
+        { path: '/expenses', label: 'Depenses', allowedRoles: ['owner'] },
     ];
 
     const managementItems = [
@@ -33,67 +34,79 @@ export default function Sidebar() {
     ];
 
     const filterItems = (items) => {
-        return items.filter(item => {
-            if (!userProfile?.role) return false;
-            return item.allowedRoles.includes(userProfile.role);
-        });
+        if (!userProfile?.role) return [];
+        return items.filter((item) => item.allowedRoles.includes(userProfile.role));
+    };
+
+    const linkClass = (path) => {
+        const isActive = location.pathname === path;
+        return `block rounded-xl px-4 py-3 text-base font-semibold transition-all duration-150 ${
+            isActive
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+        }`;
     };
 
     return (
-        <div className="fixed left-0 top-0 h-full w-72 bg-slate-900 border-r border-slate-800 p-6 flex flex-col z-50 text-white shadow-2xl">
-            <div className="mb-10 px-2">
-                <h1 className="text-3xl font-serif font-bold text-white tracking-tight flex flex-col">
-                    {firstName}
-                    {lastName && (
-                        <span className="text-amber-500 text-lg font-sans font-medium tracking-widest uppercase mt-1">
-                            {lastName}
-                        </span>
-                    )}
-                </h1>
-            </div>
+        <>
+            {isOpen && (
+                <button
+                    type="button"
+                    aria-label="Fermer le menu"
+                    onClick={onClose}
+                    className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-sm lg:hidden"
+                />
+            )}
 
-            <nav className="space-y-1 flex-1 overflow-y-auto scrollbar-hide">
-                <p className="px-4 mb-3 text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Menu Principal</p>
-
-                {filterItems(mainMenuItems).map((item) => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium border border-transparent ${location.pathname === item.path
-                            ? 'bg-slate-800 text-white border-slate-700'
-                            : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-700'
-                            }`}
+            <aside
+                className={`fixed left-0 top-0 z-50 flex h-full w-72 flex-col border-r border-slate-200 bg-white p-6 shadow-sm transition-transform duration-200 lg:translate-x-0 ${
+                    isOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
+            >
+                <div className="mb-8 flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <h1 className="flex flex-col text-3xl font-bold leading-tight text-slate-900">
+                        {firstName}
+                        {lastName && (
+                            <span className="mt-1 text-lg font-semibold uppercase tracking-wide text-slate-500">
+                                {lastName}
+                            </span>
+                        )}
+                    </h1>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:text-slate-800 lg:hidden"
+                        aria-label="Fermer"
                     >
-                        {item.label}
-                    </Link>
-                ))}
-
-                <div className="pt-8 pb-3">
-                    <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Gestion</p>
+                        <XMarkIcon className="h-5 w-5" />
+                    </button>
                 </div>
 
-                {filterItems(managementItems).map((item) => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium border border-transparent ${location.pathname === item.path
-                            ? 'bg-slate-800 text-white border-slate-700'
-                            : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-700'
-                            }`}
-                    >
-                        {item.label}
-                    </Link>
-                ))}
-            </nav>
+                <nav className="flex-1 space-y-1 overflow-y-auto pr-1 scrollbar-hide">
+                    <p className="mb-2 px-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Menu principal</p>
+                    {filterItems(mainMenuItems).map((item) => (
+                        <Link key={item.path} to={item.path} className={linkClass(item.path)} onClick={onClose}>
+                            {item.label}
+                        </Link>
+                    ))}
 
-            <div className="pt-6 border-t border-slate-800 mt-4">
-                <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-3 text-left text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-all duration-200 font-medium flex items-center gap-2"
-                >
-                    <span>Déconnexion</span>
-                </button>
-            </div>
-        </div>
+                    <p className="mb-2 mt-8 px-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Gestion</p>
+                    {filterItems(managementItems).map((item) => (
+                        <Link key={item.path} to={item.path} className={linkClass(item.path)} onClick={onClose}>
+                            {item.label}
+                        </Link>
+                    ))}
+                </nav>
+
+                <div className="mt-6 border-t border-slate-200 pt-5">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full rounded-xl px-4 py-3 text-left text-base font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                    >
+                        Deconnexion
+                    </button>
+                </div>
+            </aside>
+        </>
     );
 }

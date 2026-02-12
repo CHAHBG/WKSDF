@@ -1,16 +1,17 @@
-import { AppState } from 'react-native';
+﻿import { AppState } from 'react-native';
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
-const fallbackUrl = 'https://aimnpbroehaeihkpvumm.supabase.co';
-const fallbackAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpbW5wYnJvZWhhZWloa3B2dW1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NzYwNTIsImV4cCI6MjA3OTU1MjA1Mn0.XkpiIFJCmCelsQ-dPcWZ6fU-0eAXe7xY3Q3uwrAnOA8';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || fallbackUrl;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || fallbackAnonKey;
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. Configure them in your mobile environment.');
+}
 
-if (__DEV__ && (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)) {
-    console.warn('Using fallback Supabase credentials. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY for production.');
+if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) {
+    throw new Error('Invalid EXPO_PUBLIC_SUPABASE_URL format. Expected https://<project-ref>.supabase.co');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

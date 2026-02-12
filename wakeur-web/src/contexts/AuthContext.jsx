@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
                 .from('shop_settings')
                 .select('*')
                 .eq('id', agent.shop_id)
-                .single();
+                .maybeSingle();
             setShopSettings(shop);
         }
 
@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }) => {
                     .from('shop_settings')
                     .select('*')
                     .eq('id', profile.shop_id)
-                    .single();
+                    .maybeSingle();
 
                 if (shopError) {
                     console.error('Error loading shop settings:', shopError);

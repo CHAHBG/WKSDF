@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
     ArrowsRightLeftIcon,
-    UserIcon,
-    PhoneIcon,
     CalendarIcon,
     CheckCircleIcon,
     XCircleIcon,
     ClockIcon
 } from '@heroicons/react/24/outline';
+
+const TRANSFER_DATE_COLUMNS = ['created_at', 'date', 'transfer_date'];
+
+const resolveTransferDate = (transfer) => transfer.created_at || transfer.date || transfer.transfer_date;
 
 export default function Transfers() {
     const { user } = useAuth();
@@ -24,13 +26,31 @@ export default function Transfers() {
 
     const fetchTransfers = async () => {
         try {
-            const { data, error } = await supabase
-                .from('transfers')
-                .select('*')
-                .order('date', { ascending: false });
+            let queryResult = null;
+            let lastError = null;
 
-            if (error) throw error;
-            setTransfers(data || []);
+            for (const dateColumn of TRANSFER_DATE_COLUMNS) {
+                queryResult = await supabase
+                    .from('transfers')
+                    .select('*')
+                    .order(dateColumn, { ascending: false });
+
+                if (!queryResult.error) {
+                    break;
+                }
+
+                if (queryResult.error.code !== '42703') {
+                    throw queryResult.error;
+                }
+
+                lastError = queryResult.error;
+            }
+
+            if (queryResult?.error) {
+                throw queryResult.error || lastError;
+            }
+
+            setTransfers(queryResult?.data || []);
         } catch (error) {
             console.error('Error fetching transfers:', error);
         } finally {
@@ -39,15 +59,15 @@ export default function Transfers() {
     };
 
     const getStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
+        switch ((status || '').toLowerCase()) {
             case 'completed':
-            case 'succès':
+            case 'succes':
                 return 'bg-emerald-100 text-emerald-800';
             case 'pending':
             case 'en attente':
                 return 'bg-amber-100 text-amber-800';
             case 'failed':
-            case 'échec':
+            case 'echec':
                 return 'bg-rose-100 text-rose-800';
             default:
                 return 'bg-slate-100 text-slate-800';
@@ -55,24 +75,24 @@ export default function Transfers() {
     };
 
     const getStatusIcon = (status) => {
-        switch (status?.toLowerCase()) {
+        switch ((status || '').toLowerCase()) {
             case 'completed':
-            case 'succès':
-                return <CheckCircleIcon className="w-4 h-4 mr-1" />;
+            case 'succes':
+                return <CheckCircleIcon className="mr-1 h-4 w-4" />;
             case 'pending':
             case 'en attente':
-                return <ClockIcon className="w-4 h-4 mr-1" />;
+                return <ClockIcon className="mr-1 h-4 w-4" />;
             case 'failed':
-            case 'échec':
-                return <XCircleIcon className="w-4 h-4 mr-1" />;
+            case 'echec':
+                return <XCircleIcon className="mr-1 h-4 w-4" />;
             default:
                 return null;
         }
     };
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-screen">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-900 border-t-transparent"></div>
+        <div className="flex min-h-screen items-center justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-transparent"></div>
         </div>
     );
 
@@ -80,89 +100,74 @@ export default function Transfers() {
         <div className="space-y-8 animate-fade-in">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Historique des Transferts</h1>
-                    <p className="text-gray-500 text-lg">Suivez tous les transferts d'argent effectués</p>
+                    <h1 className="mb-2 text-3xl font-bold text-slate-900">Historique des Transferts</h1>
+                    <p className="text-lg text-slate-500">Suivez tous les transferts d'argent effectues</p>
                 </div>
-                <div className="bg-white px-6 py-3 rounded-xl border border-gray-100 text-sm font-bold text-blue-600 flex items-center shadow-sm">
-                    <ArrowsRightLeftIcon className="w-5 h-5 mr-2" />
-                    {transfers.length} Transferts Total
+                <div className="flex items-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm">
+                    <ArrowsRightLeftIcon className="mr-2 h-5 w-5" />
+                    {transfers.length} Transferts total
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-100">
+                        <thead className="border-b border-slate-200 bg-slate-50">
                             <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date & Heure</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Émetteur</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Destinataire</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Montant</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Date & heure</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Type</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Description</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Montant</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Statut</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-slate-100">
                             {transfers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
-                                        <ArrowsRightLeftIcon className="w-12 h-12 mx-auto mb-3 text-gray-200" />
-                                        <p>Aucun transfert trouvé</p>
+                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-400">
+                                        <ArrowsRightLeftIcon className="mx-auto mb-3 h-12 w-12 text-slate-200" />
+                                        <p>Aucun transfert trouve</p>
                                     </td>
                                 </tr>
                             ) : (
-                                transfers.map((transfer) => (
-                                    <tr key={transfer.id} className="group hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <CalendarIcon className="w-4 h-4 mr-2 text-gray-400" />
-                                                {new Date(transfer.date).toLocaleDateString()}
-                                                <span className="mx-2 text-gray-300">|</span>
-                                                {new Date(transfer.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 capitalize">
-                                                {transfer.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900 flex items-center">
-                                                    <UserIcon className="w-3 h-3 mr-1 text-gray-400" />
-                                                    {transfer.sender_name}
+                                transfers.map((transfer) => {
+                                    const transferDate = resolveTransferDate(transfer);
+                                    return (
+                                        <tr key={transfer.id} className="transition-colors hover:bg-slate-50">
+                                            <td className="whitespace-nowrap px-6 py-4">
+                                                <div className="flex items-center text-sm text-slate-600">
+                                                    <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+                                                    {transferDate ? new Date(transferDate).toLocaleDateString('fr-FR') : '-'}
+                                                    {transferDate && (
+                                                        <>
+                                                            <span className="mx-2 text-slate-300">|</span>
+                                                            {new Date(transferDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4">
+                                                <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-700">
+                                                    {transfer.type || 'Transfer'}
                                                 </span>
-                                                <span className="text-xs text-gray-500 flex items-center mt-0.5">
-                                                    <PhoneIcon className="w-3 h-3 mr-1" />
-                                                    {transfer.sender_phone}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                {transfer.description || '-'}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4 text-right">
+                                                <span className="font-mono text-sm font-bold text-slate-900">
+                                                    {Number(transfer.amount || 0).toLocaleString()} F
                                                 </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900 flex items-center">
-                                                    <UserIcon className="w-3 h-3 mr-1 text-gray-400" />
-                                                    {transfer.recipient_name}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4 text-center">
+                                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold capitalize ${getStatusColor(transfer.status)}`}>
+                                                    {getStatusIcon(transfer.status)}
+                                                    <span>{transfer.status || 'pending'}</span>
                                                 </span>
-                                                <span className="text-xs text-gray-500 flex items-center mt-0.5">
-                                                    <PhoneIcon className="w-3 h-3 mr-1" />
-                                                    {transfer.recipient_phone}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <span className="text-sm font-bold text-gray-900 font-mono">
-                                                {parseInt(transfer.amount).toLocaleString()} F
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(transfer.status)}`}>
-                                                {getStatusIcon(transfer.status)}
-                                                <span className="capitalize">{transfer.status}</span>
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

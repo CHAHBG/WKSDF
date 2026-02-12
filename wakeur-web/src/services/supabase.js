@@ -1,13 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
+﻿import { createClient } from '@supabase/supabase-js';
 
-const fallbackUrl = 'https://aimnpbroehaeihkpvumm.supabase.co';
-const fallbackAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpbW5wYnJvZWhhZWloa3B2dW1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NzYwNTIsImV4cCI6MjA3OTU1MjA1Mn0.XkpiIFJCmCelsQ-dPcWZ6fU-0eAXe7xY3Q3uwrAnOA8';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || fallbackUrl;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || fallbackAnonKey;
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Configure them in your web environment.');
+}
 
-if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY)) {
-    console.warn('Using fallback Supabase credentials. Define VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in production.');
+if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) {
+    throw new Error('Invalid VITE_SUPABASE_URL format. Expected https://<project-ref>.supabase.co');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

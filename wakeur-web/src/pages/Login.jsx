@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -190,15 +190,12 @@ export default function Login() {
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-slate-950">
-            <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-300/25 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-36 -right-20 h-[28rem] w-[28rem] rounded-full bg-amber-300/20 blur-3xl" />
-
+        <div className="relative min-h-screen overflow-hidden bg-slate-100">
             <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center p-4 sm:p-6">
                 <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl md:grid-cols-[1.1fr_1fr]">
-                    <aside className="hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-10 text-white md:flex md:flex-col md:justify-between">
+                    <aside className="hidden bg-white p-10 text-slate-900 border-r border-slate-200 md:flex md:flex-col md:justify-between">
                         <div>
-                            <p className="inline-flex items-center rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">
+                            <p className="inline-flex items-center rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                                 Wakeur Sokhna
                             </p>
                             <h1 className="mt-6 text-4xl font-bold leading-tight">
@@ -206,14 +203,14 @@ export default function Login() {
                                 <br />
                                 pour votre boutique
                             </h1>
-                            <p className="mt-4 text-sm text-slate-200">
+                            <p className="mt-4 text-sm text-slate-600">
                                 Connexion admin et agent, recuperation de mot de passe par email, et flux de connexion renforce.
                             </p>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-cyan-100">Bonnes pratiques</p>
-                            <ul className="mt-3 space-y-2 text-sm text-slate-100">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Bonnes pratiques</p>
+                            <ul className="mt-3 space-y-2 text-sm text-slate-700">
                                 <li>Utilisez un mot de passe unique et robuste.</li>
                                 <li>Ne partagez jamais votre code PIN agent.</li>
                                 <li>Demandez un nouveau lien si l ancien a expire.</li>
@@ -392,3 +389,5 @@ export default function Login() {
         </div>
     );
 }
+
+

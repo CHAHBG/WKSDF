@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -58,7 +58,9 @@ export default function Dashboard() {
             const { data, error } = await supabase
                 .from('shop_settings')
                 .select('*')
-                .single();
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
             if (error) throw error;
             if (data) {
@@ -122,7 +124,7 @@ export default function Dashboard() {
             setCategoryData({
                 labels: categoryLabels,
                 datasets: [{
-                    label: 'Valeur par Catégorie (CFA)',
+                    label: 'Valeur par CatÃ©gorie (CFA)',
                     data: categoryValues,
                     backgroundColor: [
                         'rgba(54, 162, 235, 0.6)',
@@ -367,7 +369,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-4">Distribution par Catégorie</h2>
+                    <h2 className="text-xl font-bold mb-4">Distribution par CatÃ©gorie</h2>
                     {categoryData ? (
                         <div className="h-64 flex justify-center">
                             <Doughnut data={categoryData} options={{
@@ -434,7 +436,7 @@ export default function Dashboard() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rang</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité Vendue</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QuantitÃ© Vendue</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu</th>
                             </tr>
                         </thead>
@@ -460,10 +462,11 @@ export default function Dashboard() {
                         </tbody>
                     </table>
                     {topProducts.length === 0 && (
-                        <p className="text-center text-gray-500 py-8">Aucune vente enregistrée</p>
+                        <p className="text-center text-gray-500 py-8">Aucune vente enregistrÃ©e</p>
                     )}
                 </div>
             </div>
         </div>
     );
 }
+

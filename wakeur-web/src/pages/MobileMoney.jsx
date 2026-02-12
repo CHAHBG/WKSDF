@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 
 export default function MobileMoney() {
@@ -100,16 +100,19 @@ export default function MobileMoney() {
                 .select('*')
                 .eq('report_date', today)
                 .eq('is_closed', false)
-                .single();
+                .order('opened_at', { ascending: false })
+                .limit(1);
 
             if (error && error.code !== 'PGRST116') {
                 throw error;
             }
 
-            if (!data) {
+            const activeReport = Array.isArray(data) ? data[0] : data;
+
+            if (!activeReport) {
                 setShowOpeningModal(true);
             } else {
-                setDailyReport(data);
+                setDailyReport(activeReport);
             }
         } catch (error) {
             console.error('Error checking daily report:', error);
@@ -186,7 +189,7 @@ export default function MobileMoney() {
                 });
 
             if (error) throw error;
-            alert('Journée ouverte avec succès!');
+            alert('JournÃ©e ouverte avec succÃ¨s!');
             setShowOpeningModal(false);
             checkDailyReport();
         } catch (error) {
@@ -198,12 +201,12 @@ export default function MobileMoney() {
     const handleCreateTransaction = async (type) => {
         const total = calculateTotal(transactionCash);
         if (total === 0) {
-            alert('Le montant ne peut pas être zéro');
+            alert('Le montant ne peut pas Ãªtre zÃ©ro');
             return;
         }
 
         if (!selectedPlatform) {
-            alert('Veuillez sélectionner un opérateur Mobile Money');
+            alert('Veuillez sÃ©lectionner un opÃ©rateur Mobile Money');
             return;
         }
 
@@ -228,7 +231,7 @@ export default function MobileMoney() {
                 if (transactionCash[key]) triggerAnimation(`cash-${key}`);
             });
 
-            alert('Transaction enregistrée!');
+            alert('Transaction enregistrÃ©e!');
             setShowTransactionModal(false);
             setTransactionCash({
                 b10000: '', b5000: '', b2000: '', b1000: '',
@@ -291,7 +294,7 @@ export default function MobileMoney() {
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Mobile Money</h1>
-                        <p className="text-gray-500">Gérez vos transactions et votre solde</p>
+                        <p className="text-gray-500">GÃ©rez vos transactions et votre solde</p>
                     </div>
                     <button
                         onClick={() => setShowTransactionModal(true)}
@@ -339,8 +342,8 @@ export default function MobileMoney() {
                             {/* Cash Balance */}
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up">
                                 <div className="p-5 border-b border-gray-100">
-                                    <h2 className="text-base font-semibold text-gray-900">Caisse Espèces</h2>
-                                    <p className="text-xs text-gray-500 mt-0.5">Détail par dénomination</p>
+                                    <h2 className="text-base font-semibold text-gray-900">Caisse EspÃ¨ces</h2>
+                                    <p className="text-xs text-gray-500 mt-0.5">DÃ©tail par dÃ©nomination</p>
                                 </div>
 
                                 <div className="p-5 bg-gray-50 border-b border-gray-100">
@@ -368,14 +371,14 @@ export default function MobileMoney() {
                                                 >
                                                     <span className="text-sm font-medium text-gray-700">{label} FCFA</span>
                                                     <div className="text-right">
-                                                        <span className="text-sm font-semibold text-gray-900 font-mono">{qty} × {value.toLocaleString()}</span>
+                                                        <span className="text-sm font-semibold text-gray-900 font-mono">{qty} Ã— {value.toLocaleString()}</span>
                                                         <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
 
-                                        <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mt-4">Pièces</div>
+                                        <div className="text-xs font-bold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mt-4">PiÃ¨ces</div>
                                         {[
                                             { key: 'c500', label: '500', value: 500 },
                                             { key: 'c250', label: '250', value: 250 },
@@ -395,7 +398,7 @@ export default function MobileMoney() {
                                                 >
                                                     <span className="font-medium text-gray-600">{label} F</span>
                                                     <div className="text-right">
-                                                        <span className="font-semibold text-gray-900 font-mono">{qty} × {value}</span>
+                                                        <span className="font-semibold text-gray-900 font-mono">{qty} Ã— {value}</span>
                                                         <div className="text-xs text-gray-500 font-mono">{total.toLocaleString()} F</div>
                                                     </div>
                                                 </div>
@@ -409,7 +412,7 @@ export default function MobileMoney() {
                             < div className="bg-white rounded-lg shadow-sm border border-gray-200 slide-up" >
                                 <div className="p-5 border-b border-gray-100">
                                     <h2 className="text-base font-semibold text-gray-900">Comptes Mobile Money</h2>
-                                    <p className="text-xs text-gray-500 mt-0.5">Par opérateur</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Par opÃ©rateur</p>
                                 </div>
 
                                 <div className="p-5 bg-gray-50 border-b border-gray-100">
@@ -466,7 +469,7 @@ export default function MobileMoney() {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden slide-up">
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
                         <h3 className="text-base font-semibold text-gray-900">Historique des Transactions</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Dernières 50 opérations</p>
+                        <p className="text-xs text-gray-500 mt-0.5">DerniÃ¨res 50 opÃ©rations</p>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -474,7 +477,7 @@ export default function MobileMoney() {
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date & Heure</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Opérateur</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">OpÃ©rateur</th>
                                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Montant</th>
                                     <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Statut</th>
                                 </tr>
@@ -483,8 +486,8 @@ export default function MobileMoney() {
                                 {transactions.length === 0 ? (
                                     <tr>
                                         <td colSpan="5" className="px-6 py-12 text-center">
-                                            <div className="text-gray-400">Aucune transaction enregistrée</div>
-                                            <p className="text-gray-500 text-xs mt-2">Les transactions apparaîtront ici</p>
+                                            <div className="text-gray-400">Aucune transaction enregistrÃ©e</div>
+                                            <p className="text-gray-500 text-xs mt-2">Les transactions apparaÃ®tront ici</p>
                                         </td>
                                     </tr>
                                 ) : (
@@ -542,15 +545,15 @@ export default function MobileMoney() {
                 showOpeningModal && (
                     <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
                         <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full m-4 max-h-[90vh] overflow-y-auto">
-                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 border-b border-blue-700">
+                            <div className="bg-slate-800 px-6 py-5 border-b border-slate-700">
                                 <h2 className="text-2xl font-semibold text-white">Ouverture de Caisse</h2>
-                                <p className="text-blue-100 text-sm mt-1">Saisissez les soldes initiaux pour démarrer la session</p>
+                                <p className="text-slate-200 text-sm mt-1">Saisissez les soldes initiaux pour dÃ©marrer la session</p>
                             </div>
 
                             <div className="p-6 space-y-6">
                                 {/* Cash Section */}
                                 <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Caisse Espèces (FCFA)</h3>
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Caisse EspÃ¨ces (FCFA)</h3>
 
                                     <div className="mb-4">
                                         <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
@@ -563,7 +566,7 @@ export default function MobileMoney() {
                                     </div>
 
                                     <div>
-                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
+                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">PiÃ¨ces</p>
                                         <div className="grid grid-cols-8 gap-2">
                                             <DenominationInput label="500" value={cashBreakdown.c500} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c500: v })} />
                                             <DenominationInput label="250" value={cashBreakdown.c250} onChange={(v) => setCashBreakdown({ ...cashBreakdown, c250: v })} />
@@ -578,7 +581,7 @@ export default function MobileMoney() {
 
                                     <div className="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
                                         <div className="flex justify-between items-center">
-                                            <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Espèces</div>
+                                            <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total EspÃ¨ces</div>
                                             <div className="text-2xl font-semibold text-gray-900 font-mono">
                                                 {calculateTotal(cashBreakdown).toLocaleString()} FCFA
                                             </div>
@@ -639,18 +642,18 @@ export default function MobileMoney() {
                 showTransactionModal && (
                     <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
                         <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full m-4 max-h-[90vh] overflow-y-auto">
-                            <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-6 py-5 border-b border-green-700">
+                            <div className="bg-slate-700 px-6 py-5 border-b border-slate-600">
                                 <h2 className="text-2xl font-semibold text-white">Nouvelle Transaction</h2>
-                                <p className="text-green-100 text-sm mt-1">Enregistrer un encaissement ou décaissement</p>
+                                <p className="text-slate-200 text-sm mt-1">Enregistrer un encaissement ou dÃ©caissement</p>
                             </div>
 
                             <div className="p-6 space-y-6">
                                 {/* Operator */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Opérateur Mobile Money</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">OpÃ©rateur Mobile Money</label>
                                     {platforms.length === 0 ? (
                                         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                                            Aucun opérateur disponible
+                                            Aucun opÃ©rateur disponible
                                         </div>
                                     ) : (
                                         <select
@@ -658,7 +661,7 @@ export default function MobileMoney() {
                                             onChange={(e) => setSelectedPlatform(e.target.value)}
                                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
                                         >
-                                            <option value="">Sélectionner un opérateur</option>
+                                            <option value="">SÃ©lectionner un opÃ©rateur</option>
                                             {platforms.map(p => (
                                                 <option key={p.id} value={p.id}>
                                                     {p.name} ({p.code})
@@ -670,7 +673,7 @@ export default function MobileMoney() {
 
                                 {/* Cash Breakdown */}
                                 <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Ventilation des Espèces</h3>
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Ventilation des EspÃ¨ces</h3>
 
                                     <div className="mb-4">
                                         <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Billets</p>
@@ -683,7 +686,7 @@ export default function MobileMoney() {
                                     </div>
 
                                     <div>
-                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Pièces</p>
+                                        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">PiÃ¨ces</p>
                                         <div className="grid grid-cols-8 gap-2">
                                             <DenominationInput label="500" value={transactionCash.c500} onChange={(v) => setTransactionCash({ ...transactionCash, c500: v })} />
                                             <DenominationInput label="250" value={transactionCash.c250} onChange={(v) => setTransactionCash({ ...transactionCash, c250: v })} />
@@ -718,7 +721,7 @@ export default function MobileMoney() {
                                         onClick={() => handleCreateTransaction('DECAISSEMENT')}
                                         className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-sm"
                                     >
-                                        DÉCAISSEMENT
+                                        DÃ‰CAISSEMENT
                                     </button>
                                 </div>
 
@@ -736,3 +739,4 @@ export default function MobileMoney() {
         </div >
     );
 }
+
