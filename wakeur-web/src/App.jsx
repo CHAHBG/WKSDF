@@ -12,13 +12,19 @@ import Sales from './pages/Sales';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import ResetPassword from './pages/ResetPassword';
+import ShopSetup from './pages/ShopSetup';
 import AgentManagement from './pages/AgentManagement';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
 
 const AppRoutes = () => {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
+  const requiresShopSetup = Boolean(
+    user &&
+    userProfile?.role === 'owner' &&
+    !userProfile?.shop_id
+  );
 
   if (loading) {
     return (
@@ -33,6 +39,12 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
 
       {user ? (
+        requiresShopSetup ? (
+          <>
+            <Route path="/setup-shop" element={<ShopSetup />} />
+            <Route path="*" element={<Navigate to="/setup-shop" replace />} />
+          </>
+        ) : (
         <>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
@@ -46,7 +58,9 @@ const AppRoutes = () => {
             <Route path="agents" element={<AgentManagement />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+          <Route path="/setup-shop" element={<Navigate to="/" replace />} />
         </>
+        )
       ) : (
         <>
           <Route path="/login" element={<Login />} />

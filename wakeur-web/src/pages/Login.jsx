@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import {
+    ShieldCheckIcon,
+    UserGroupIcon,
+    KeyIcon,
+    EnvelopeIcon,
+    PhoneIcon,
+    ArrowRightIcon,
+    LifebuoyIcon
+} from '@heroicons/react/24/outline';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_LOCK_DURATION_MS = 60 * 1000;
@@ -15,7 +24,6 @@ const readFutureTimestamp = (storageKey) => {
     try {
         const raw = window.localStorage.getItem(storageKey);
         const parsed = Number(raw);
-        if (!Number.isFinite(parsed)) return 0;
         return parsed > Date.now() ? parsed : 0;
     } catch {
         return 0;
@@ -28,20 +36,15 @@ export default function Login() {
     const location = useLocation();
 
     const [isAgentLogin, setIsAgentLogin] = useState(false);
-
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-
     const [phone, setPhone] = useState('');
     const [code, setCode] = useState('');
-    const [showCode, setShowCode] = useState(false);
-
     const [failedAttempts, setFailedAttempts] = useState(0);
     const [lockUntil, setLockUntil] = useState(0);
     const [resetCooldownUntil, setResetCooldownUntil] = useState(0);
     const [nowMs, setNowMs] = useState(Date.now());
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
@@ -53,311 +56,235 @@ export default function Login() {
 
     useEffect(() => {
         const storedLockUntil = readFutureTimestamp(ADMIN_LOGIN_LOCK_KEY);
-        if (storedLockUntil > 0) {
-            setLockUntil(storedLockUntil);
-        }
-    }, []);
+        if (storedLockUntil > 0) setLockUntil(storedLockUntil);
 
-    useEffect(() => {
-        const hasCountdown = lockUntil > Date.now() || resetCooldownUntil > Date.now();
-        if (!hasCountdown) return undefined;
-
-        const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
-        return () => window.clearInterval(timer);
-    }, [lockUntil, resetCooldownUntil]);
-
-    useEffect(() => {
         const params = new URLSearchParams(location.search);
         if (params.get('reset') === 'success') {
-            setInfo('Mot de passe mis à jour. Connectez-vous avec le nouveau mot de passe.');
+            setInfo('Mot de passe mis à jour avec succès.');
         }
     }, [location.search]);
 
-    const switchMode = (agentMode) => {
-        setIsAgentLogin(agentMode);
-        setError('');
-        setInfo('');
-    };
-
-    const registerFailedAdminAttempt = () => {
-        const attempts = failedAttempts + 1;
-        if (attempts >= MAX_LOGIN_ATTEMPTS) {
-            const nextLockUntil = Date.now() + LOGIN_LOCK_DURATION_MS;
-            setFailedAttempts(0);
-            setLockUntil(nextLockUntil);
-            window.localStorage.setItem(ADMIN_LOGIN_LOCK_KEY, String(nextLockUntil));
-            throw new Error(`Trop de tentatives. Réessayez dans ${Math.ceil(LOGIN_LOCK_DURATION_MS / 1000)} secondes.`);
+    useEffect(() => {
+        if (lockUntil > Date.now() || resetCooldownUntil > Date.now()) {
+            const timer = setInterval(() => setNowMs(Date.now()), 1000);
+            return () => clearInterval(timer);
         }
+    }, [lockUntil, resetCooldownUntil]);
 
-        setFailedAttempts(attempts);
-        throw new Error('Email ou mot de passe incorrect.');
-    };
-
-    const handleLogin = async (event) => {
-        event.preventDefault();
-        if (loading) return;
-
-        setError('');
-        setInfo('');
-        setLoading(true);
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError(''); setInfo(''); setLoading(true);
 
         try {
             if (isAgentLogin) {
-                const sanitizedPhone = phone.replace(/\D/g, '');
-                const sanitizedCode = code.replace(/\D/g, '');
-
-                if (!sanitizedPhone || !sanitizedCode) {
-                    throw new Error('Veuillez saisir le téléphone et le code PIN.');
-                }
-
-                const result = await loginAsAgent(sanitizedPhone, sanitizedCode);
-                if (!result.success) {
-                    throw new Error(result.error || 'Connexion agent impossible.');
-                }
-
+                const res = await loginAsAgent(phone.replace(/\D/g, ''), code.replace(/\D/g, ''));
+                if (!res.success) throw new Error(res.error || 'Identifiants agent incorrects.');
                 navigate('/');
                 return;
             }
 
-            if (isLocked) {
-                throw new Error(`Compte temporairement bloqué. Réessayez dans ${lockSecondsRemaining} secondes.`);
-            }
-
-            const normalizedEmail = normalizeEmail(email);
-            if (!EMAIL_REGEX.test(normalizedEmail) || !password) {
-                throw new Error('Veuillez saisir un email valide et un mot de passe.');
-            }
+            if (isLocked) throw new Error(`Compte verrouillé. Réssayez dans ${lockSecondsRemaining}s.`);
 
             const { error: loginError } = await supabase.auth.signInWithPassword({
-                email: normalizedEmail,
-                password,
+                email: normalizeEmail(email),
+                password
             });
 
             if (loginError) {
-                if (/invalid login credentials/i.test(loginError.message || '')) {
-                    registerFailedAdminAttempt();
+                const attempts = failedAttempts + 1;
+                if (attempts >= MAX_LOGIN_ATTEMPTS) {
+                    const lock = Date.now() + LOGIN_LOCK_DURATION_MS;
+                    setLockUntil(lock);
+                    window.localStorage.setItem(ADMIN_LOGIN_LOCK_KEY, String(lock));
+                    throw new Error('Trop de tentatives. Accès bloqué temporairement.');
                 }
-                throw new Error(loginError.message || 'Connexion impossible.');
+                setFailedAttempts(attempts);
+                throw new Error('Email ou mot de passe incorrect.');
             }
 
-            setFailedAttempts(0);
-            setLockUntil(0);
             window.localStorage.removeItem(ADMIN_LOGIN_LOCK_KEY);
             navigate('/');
-        } catch (loginFlowError) {
-            setError(loginFlowError.message || 'Connexion impossible.');
+        } catch (err) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
     const handleForgotPassword = async () => {
-        if (loading) return;
-
-        setError('');
-        setInfo('');
-
-        const normalizedEmail = normalizeEmail(email);
-        if (!EMAIL_REGEX.test(normalizedEmail)) {
-            setError('Veuillez saisir un email valide puis cliquer sur "Mot de passe oublié ?".');
+        const normEmail = normalizeEmail(email);
+        if (!EMAIL_REGEX.test(normEmail)) {
+            setError('Veuillez saisir un email valide.');
             return;
         }
-
-        if (isResetCoolingDown) {
-            setInfo(`Veuillez patienter ${resetCooldownSeconds} secondes avant une nouvelle demande.`);
-            return;
-        }
+        if (isResetCoolingDown) return;
 
         setLoading(true);
         try {
-            const redirectTo = `${window.location.origin}/reset-password`;
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
-
-            if (resetError) {
-                if (/rate limit/i.test(resetError.message || '')) {
-                    throw new Error('Trop de demandes de réinitialisation. Veuillez patienter un peu.');
-                }
-                throw new Error('Impossible d envoyer l email de réinitialisation pour le moment.');
-            }
-
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(normEmail, {
+                redirectTo: `${window.location.origin}/reset-password`
+            });
+            if (resetError) throw resetError;
             setResetCooldownUntil(Date.now() + RESET_EMAIL_COOLDOWN_MS);
-            setInfo('Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.');
-        } catch (resetFlowError) {
-            setError(resetFlowError.message || 'Erreur lors de la demande de réinitialisation.');
+            setInfo('Lien de réinitialisation envoyé par email.');
+        } catch (err) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-slate-100">
-            <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center p-4 sm:p-6">
-                <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl md:grid-cols-[1.1fr_1fr]">
-                    <aside className="hidden bg-white p-10 text-slate-900 border-r border-slate-200 md:flex md:flex-col md:justify-between">
-                        <div>
-                            <p className="inline-flex items-center rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                                Wakeur Sokhna
-                            </p>
-                            <h1 className="mt-6 text-4xl font-bold leading-tight">
-                                Gestion sécurisée
-                                <br />
-                                pour votre boutique
-                            </h1>
-                            <p className="mt-4 text-sm text-slate-600">
-                                Connexion admin et agent, récupération de mot de passe par email, et flux de connexion renforcé.
-                            </p>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 sm:p-12 overflow-hidden selection:bg-indigo-100 selection:text-indigo-600">
+            {/* Background Accents */}
+            <div className="fixed top-0 left-0 w-full h-full pointer-events-none opacity-20">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500 blur-[120px] rounded-full animate-pulse-slow"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500 blur-[120px] rounded-full animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+            </div>
+
+            <div className="w-full max-w-6xl relative z-10 flex flex-col lg:flex-row bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
+
+                {/* Brand Side */}
+                <div className="lg:w-1/2 p-12 lg:p-20 bg-slate-900 relative overflow-hidden flex flex-col justify-between group">
+                    <div className="absolute inset-0 bg-indigo-600 opacity-10 group-hover:opacity-20 transition-opacity duration-700"></div>
+                    <div className="relative">
+                        <div className="h-14 w-14 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/50 mb-10">
+                            <ShieldCheckIcon className="w-8 h-8 text-white" />
+                        </div>
+                        <h1 className="text-4xl lg:text-5xl font-black text-white leading-tight">
+                            Gérez votre Empire <br />
+                            <span className="text-indigo-400">Wakeur Sokhna.</span>
+                        </h1>
+                        <p className="mt-8 text-slate-400 font-medium text-lg leading-relaxed max-w-md">
+                            Plateforme de gestion unifiée pour vos finances, stocks et collaborateurs. Sécurisée, Rapide, Intelligente.
+                        </p>
+                    </div>
+
+                    <div className="relative mt-20 space-y-6">
+                        <div className="flex items-center gap-4 text-slate-300">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 italic font-black">1</div>
+                            <span className="text-sm font-bold">Confidentialité de bout en bout</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-slate-300">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 italic font-black">2</div>
+                            <span className="text-sm font-bold">Protocoles Bancaires Sécurisés</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Form Side */}
+                <div className="lg:w-1/2 p-12 lg:p-20">
+                    <div className="max-w-md mx-auto">
+                        <div className="mb-12 flex items-center justify-between">
+                            <h2 className="text-3xl font-black text-slate-900 dark:text-white">Connexion</h2>
+                            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+                                <button
+                                    onClick={() => setIsAgentLogin(false)}
+                                    className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${!isAgentLogin ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Admin
+                                </button>
+                                <button
+                                    onClick={() => setIsAgentLogin(true)}
+                                    className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isAgentLogin ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Agent
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Bonnes pratiques</p>
-                            <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                                <li>Utilisez un mot de passe unique et robuste.</li>
-                                <li>Ne partagez jamais votre code PIN agent.</li>
-                                <li>Demandez un nouveau lien si l'ancien a expiré.</li>
-                            </ul>
-                        </div>
-                    </aside>
-
-                    <main className="p-6 sm:p-10">
-                        <div className="mb-8 text-center md:text-left">
-                            <h2 className="text-3xl font-bold text-slate-900">Connexion</h2>
-                            <p className="mt-2 text-sm text-slate-500">
-                                {isAgentLogin ? 'Espace agent' : 'Espace administration'}
-                            </p>
-                        </div>
-
-                        <div className="mb-6 flex rounded-xl bg-slate-100 p-1">
-                            <button
-                                type="button"
-                                onClick={() => switchMode(false)}
-                                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                                    !isAgentLogin ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                Administration
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => switchMode(true)}
-                                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                                    isAgentLogin ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                Agent
-                            </button>
-                        </div>
-
-                        <form className="space-y-5" onSubmit={handleLogin}>
+                        <form onSubmit={handleLogin} className="space-y-6">
                             {error && (
-                                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold animate-shake">
                                     {error}
                                 </div>
                             )}
 
                             {info && (
-                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl text-emerald-600 text-sm font-bold">
                                     {info}
-                                </div>
-                            )}
-
-                            {isLocked && (
-                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
-                                    Trop de tentatives de connexion. Réessayez dans {lockSecondsRemaining} secondes.
                                 </div>
                             )}
 
                             {!isAgentLogin ? (
                                 <>
-                                    <div>
-                                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                                            Email
-                                        </label>
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            autoComplete="email"
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                                            placeholder="admin@wakeur.com"
-                                        />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Email Professionnel</label>
+                                        <div className="relative">
+                                            <EnvelopeIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                            <input
+                                                type="email"
+                                                required
+                                                className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                                placeholder="nom@wakeursokhna.com"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div>
-                                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                                            Mot de passe
-                                        </label>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between px-1">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Mot de Passe</label>
+                                            <button
+                                                type="button"
+                                                onClick={handleForgotPassword}
+                                                className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 transition-colors"
+                                                disabled={loading || isResetCoolingDown}
+                                            >
+                                                {isResetCoolingDown ? `Réessayer dans ${resetCooldownSeconds}s` : 'Oublié ?'}
+                                            </button>
+                                        </div>
                                         <div className="relative">
+                                            <KeyIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                                             <input
                                                 type={showPassword ? 'text' : 'password'}
+                                                required
+                                                className="w-full pl-14 pr-14 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                                placeholder="••••••••"
                                                 value={password}
-                                                autoComplete="current-password"
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-20 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                                                placeholder="Votre mot de passe"
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() => setShowPassword((value) => !value)}
-                                                className="absolute inset-y-0 right-3 text-xs font-semibold text-slate-500 hover:text-slate-700"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                             >
                                                 {showPassword ? 'Masquer' : 'Voir'}
                                             </button>
-                                        </div>
-
-                                        <div className="mt-2 flex items-center justify-between">
-                                            <button
-                                                type="button"
-                                                disabled={loading}
-                                                onClick={handleForgotPassword}
-                                                className="text-sm font-semibold text-slate-500 transition hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                                            >
-                                                Mot de passe oublié ?
-                                            </button>
-                                            {isResetCoolingDown && (
-                                                <span className="text-xs font-semibold text-slate-400">
-                                                    Nouvelle demande dans {resetCooldownSeconds}s
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                 </>
                             ) : (
                                 <>
-                                    <div>
-                                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                                            Téléphone
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            value={phone}
-                                            autoComplete="tel"
-                                            onChange={(e) => setPhone(e.target.value)}
-                                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                                            placeholder="77 123 45 67"
-                                        />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Téléphone Agent</label>
+                                        <div className="relative">
+                                            <PhoneIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                            <input
+                                                type="tel"
+                                                required
+                                                className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                                placeholder="77 123 45 67"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value)}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div>
-                                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                                            Code PIN
-                                        </label>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Code PIN Secret</label>
                                         <div className="relative">
+                                            <ShieldCheckIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                                             <input
-                                                type={showCode ? 'text' : 'password'}
-                                                value={code}
-                                                autoComplete="one-time-code"
-                                                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                                                className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-20 text-sm font-semibold tracking-[0.35em] text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                                                placeholder="0000"
+                                                type="password"
+                                                required
                                                 maxLength={4}
+                                                className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-black text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all tracking-[0.5em]"
+                                                placeholder="••••"
+                                                value={code}
+                                                onChange={(e) => setCode(e.target.value)}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowCode((value) => !value)}
-                                                className="absolute inset-y-0 right-3 text-xs font-semibold text-slate-500 hover:text-slate-700"
-                                            >
-                                                {showCode ? 'Masquer' : 'Voir'}
-                                            </button>
                                         </div>
                                     </div>
                                 </>
@@ -366,28 +293,39 @@ export default function Login() {
                             <button
                                 type="submit"
                                 disabled={loading || isLocked}
-                                className="flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="w-full py-5 bg-indigo-600 text-white rounded-[1.8rem] font-black text-lg shadow-2xl shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                             >
-                                {loading ? 'Connexion en cours...' : 'Se connecter'}
+                                {loading ? (
+                                    <div className="h-6 w-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <>
+                                        Se Connecter
+                                        <ArrowRightIcon className="w-5 h-5" />
+                                    </>
+                                )}
                             </button>
 
                             {!isAgentLogin && (
-                                <div className="border-t border-slate-100 pt-4 text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => navigate('/signup')}
-                                        className="text-sm font-semibold text-slate-500 transition hover:text-slate-800"
-                                    >
-                                        Pas encore de compte ? Créer un compte
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/signup')}
+                                    className="w-full text-center text-xs font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-500 transition-colors py-2"
+                                >
+                                    Pas d&apos;accès ? <span className="text-indigo-600 underline">Créer un compte</span>
+                                </button>
                             )}
                         </form>
-                    </main>
+
+                        <div className="mt-20 pt-10 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between opacity-50">
+                            <div className="flex items-center gap-2">
+                                <LifebuoyIcon className="w-4 h-4 text-slate-400" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Support Technique</span>
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">v2.4.0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
-
-

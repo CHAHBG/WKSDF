@@ -8,20 +8,18 @@ import {
     PlusIcon,
     ShoppingCartIcon,
     XMarkIcon,
+    TagIcon,
+    ReceiptPercentIcon,
+    TrashIcon,
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
-const NUMBER_FORMATTER = new Intl.NumberFormat('fr-FR');
-const formatAmount = (value = 0) => NUMBER_FORMATTER.format(Math.round(Number(value) || 0));
-
-const stockTone = (quantity) => {
-    const qty = Number(quantity) || 0;
-    if (qty <= 0) return 'low';
-    if (qty <= 5) return 'warn';
-    return 'ok';
-};
+const formatAmount = (value = 0) =>
+    new Intl.NumberFormat('fr-FR').format(Math.round(Number(value) || 0)) + ' CFA';
 
 export default function Sales() {
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
+    const shopId = userProfile?.shop_id;
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [cart, setCart] = useState([]);
@@ -31,16 +29,17 @@ export default function Sales() {
     const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
-        if (user) {
+        if (user && shopId) {
             fetchData();
         }
-    }, [user]);
+    }, [user, shopId]);
 
     const fetchData = async () => {
+        setLoading(true);
         try {
             const [productsRes, categoriesRes] = await Promise.all([
-                supabase.from('v_inventory_with_avoir').select('*').order('name'),
-                supabase.from('categories').select('*').order('name'),
+                supabase.from('v_inventory_with_avoir').select('*').eq('shop_id', shopId).order('name'),
+                supabase.from('categories').select('*').eq('shop_id', shopId).order('name'),
             ]);
 
             if (productsRes.error) throw productsRes.error;
@@ -61,10 +60,7 @@ export default function Sales() {
         setCart((prev) => {
             const existing = prev.find((item) => item.id === product.id);
             if (existing) {
-                if (existing.cartQuantity >= product.quantity) {
-                    alert('Stock insuffisant.');
-                    return prev;
-                }
+                if (existing.cartQuantity >= product.quantity) return prev;
                 return prev.map((item) =>
                     item.id === product.id
                         ? { ...item, cartQuantity: item.cartQuantity + 1 }
@@ -79,10 +75,7 @@ export default function Sales() {
         setCart((prev) => prev.map((item) => {
             if (item.id === productId) {
                 const newQuantity = item.cartQuantity + delta;
-                if (newQuantity > item.quantity) {
-                    alert('Stock insuffisant.');
-                    return item;
-                }
+                if (newQuantity > item.quantity) return item;
                 return { ...item, cartQuantity: Math.max(1, newQuantity) };
             }
             return item;
@@ -106,14 +99,14 @@ export default function Sales() {
     ), [products, searchQuery, selectedCategory]);
 
     const handleCheckout = async () => {
-        if (cart.length === 0) return;
+        if (cart.length === 0 || processing) return;
         setProcessing(true);
 
         try {
             const { data: saleData, error: saleError } = await supabase
                 .from('sales')
                 .insert([{
-                    shop_id: user?.shop_id,
+                    shop_id: shopId,
                     amount: cartTotal,
                     items: cart,
                     payment_method: 'CASH',
@@ -135,246 +128,200 @@ export default function Sales() {
                 total_price: item.unit_price * item.cartQuantity,
             }));
 
-            const { error: itemsError } = await supabase
-                .from('sale_items')
-                .insert(saleItems);
-
-            if (itemsError) {
-                console.warn('Impossible d’enregistrer le détail des articles vendus.', itemsError);
-            }
+            await supabase.from('sale_items').insert(saleItems);
 
             for (const item of cart) {
-                const { error: stockError } = await supabase
+                await supabase
                     .from('products')
                     .update({ quantity: item.quantity - item.cartQuantity })
                     .eq('id', item.id);
-
-                if (stockError) throw stockError;
             }
 
             setCart([]);
             await fetchData();
-            alert('Vente enregistrée avec succès.');
         } catch (error) {
             console.error('Erreur pendant la vente :', error);
-            alert(`Erreur lors de la vente : ${error.message}`);
         } finally {
             setProcessing(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex min-h-[40vh] items-center justify-center">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-900 border-t-transparent" />
-            </div>
-        );
-    }
-
     return (
-        <div className="grid h-[calc(100vh-2rem)] grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_23.5rem] animate-fade-in">
-            <section className="flex min-h-0 flex-col gap-6">
-                <div className="glass-card sales-toolbar p-6">
-                    <div className="flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-900">Point de vente</h1>
-                            <p className="mt-1 text-sm text-slate-500">Sélectionnez les articles à vendre rapidement.</p>
-                        </div>
-                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                            {products.length} article{products.length > 1 ? 's' : ''}
-                        </span>
+        <div className="flex h-[calc(100vh-10rem)] gap-8 animate-fade-in">
+            {/* Left: Product Selection */}
+            <div className="flex-1 flex flex-col gap-6 min-w-0">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-black text-slate-900 dark:text-white">Point de Vente</h1>
+                        <p className="text-sm font-medium text-slate-500">Gérez vos encaissements rapidement.</p>
                     </div>
-
-                    <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_16rem]">
-                        <label className="relative block">
-                            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Rechercher un article..."
-                                className="input-field pl-10"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </label>
-
-                        <select
-                            className="input-field cursor-pointer"
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                        >
-                            <option value="all">Toutes les catégories</option>
-                            {categories.map((category) => (
-                                <option key={category.id} value={String(category.id)}>
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <button
+                        onClick={fetchData}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 transition-all dark:bg-slate-900 dark:border-slate-800"
+                    >
+                        <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                    {filteredProducts.length === 0 ? (
-                        <div className="chart-placeholder h-52">
-                            Aucun article ne correspond à votre recherche.
+                {/* Filters */}
+                <div className="flex gap-4">
+                    <div className="relative flex-1">
+                        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Rechercher par nom..."
+                            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <select
+                        className="pl-4 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-600 appearance-none min-w-[180px]"
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                    >
+                        <option value="all">Catégories</option>
+                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </select>
+                </div>
+
+                {/* Grid */}
+                <div className="flex-1 overflow-y-auto pr-2 -mr-2 scrollbar-hide">
+                    {loading ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                                <div key={i} className="h-48 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                            ))}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                            {filteredProducts.map((product) => {
-                                const quantity = Number(product.quantity) || 0;
-                                const tone = stockTone(quantity);
-                                const isOutOfStock = quantity <= 0;
-
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {filteredProducts.map(p => {
+                                const isLow = p.quantity <= (p.alert_threshold || 10);
+                                const isOut = p.quantity <= 0;
                                 return (
-                                    <article
-                                        key={product.id}
-                                        className={`product-card ${isOutOfStock ? 'product-card--disabled' : ''}`}
+                                    <button
+                                        key={p.id}
+                                        onClick={() => addToCart(p)}
+                                        disabled={isOut}
+                                        className={`group relative flex flex-col p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10 transition-all text-left ${isOut ? 'opacity-50 grayscale' : ''}`}
                                     >
-                                        <div className="product-card__media">
-                                            {product.image_url ? (
-                                                <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
-                                            ) : (
-                                                <div className="product-card__placeholder">
-                                                    <ShoppingCartIcon className="h-8 w-8" />
+                                        <div className="mb-3 h-12 w-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:scale-110 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/20 group-hover:text-indigo-600 transition-all">
+                                            <TagIcon className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">{p.name}</h3>
+                                        <div className="mt-1 flex items-center gap-2">
+                                            <span className="text-xs font-black text-emerald-500">{formatAmount(p.unit_price).split(' ')[0]}</span>
+                                            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] font-black uppercase tracking-wider text-slate-500">
+                                                {p.category_name}
+                                            </span>
+                                        </div>
+                                        <div className="mt-3 flex items-center justify-between">
+                                            <span className={`text-[10px] font-black uppercase ${isLow ? 'text-rose-500' : 'text-slate-400'}`}>
+                                                Stock: {p.quantity}
+                                            </span>
+                                            {!isOut && (
+                                                <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <PlusIcon className="w-5 h-5" />
                                                 </div>
                                             )}
                                         </div>
-
-                                        <div className="product-card__content">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <h3 className="product-card__title">{product.name}</h3>
-                                                    <p className="product-card__category">{product.category_name || 'Sans catégorie'}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="product-card__price-label">Prix</p>
-                                                    <p className="product-card__price">
-                                                        {formatAmount(product.unit_price)}
-                                                        <span> F</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-4 flex items-center justify-between gap-2">
-                                                <span className={`stock-chip stock-chip--${tone}`}>
-                                                    Stock {formatAmount(quantity)}
-                                                </span>
-
-                                                <button
-                                                    type="button"
-                                                    className="product-card__action"
-                                                    onClick={() => addToCart(product)}
-                                                    disabled={isOutOfStock}
-                                                >
-                                                    <PlusIcon className="h-4 w-4" />
-                                                    {isOutOfStock ? 'Rupture' : 'Ajouter'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </article>
+                                    </button>
                                 );
                             })}
                         </div>
                     )}
                 </div>
-            </section>
+            </div>
 
-            <aside className="sales-cart-panel min-h-0">
-                <div className="sales-cart-panel__header">
-                    <div className="flex items-center gap-2">
-                        <ShoppingCartIcon className="h-5 w-5 text-slate-700" />
-                        <h2 className="font-bold text-slate-900">Panier actuel</h2>
+            {/* Right: Checkout Sidebar */}
+            <div className="w-[380px] flex flex-col premium-card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-2xl">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="h-12 w-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
+                        <ShoppingCartIcon className="w-6 h-6" />
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
-                        {cart.length} article{cart.length > 1 ? 's' : ''}
-                    </span>
+                    <div>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white">Panier</h2>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">{cart.length} Articles</span>
+                    </div>
                 </div>
 
-                <div className="sales-cart-panel__body custom-scrollbar">
+                <div className="flex-1 overflow-y-auto -mx-2 px-2 scrollbar-hide space-y-4">
                     {cart.length === 0 ? (
-                        <div className="flex h-full flex-col items-center justify-center space-y-3 text-center text-slate-500">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-                                <ShoppingCartIcon className="h-8 w-8 text-slate-400" />
+                        <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                            <div className="h-20 w-20 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-4">
+                                <ShoppingCartIcon className="w-10 h-10 text-slate-300" />
                             </div>
-                            <p className="font-semibold text-slate-700">Votre panier est vide</p>
-                            <p className="max-w-[16rem] text-sm text-slate-500">
-                                Ajoutez des articles à gauche pour démarrer une vente.
-                            </p>
+                            <p className="text-slate-400 font-bold italic">Le panier est encore vide.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            {cart.map((item) => (
-                                <div key={item.id} className="cart-item">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate font-semibold text-slate-900">{item.name}</p>
-                                        <p className="mt-1 text-xs text-slate-500">
-                                            {formatAmount(item.unit_price)} F x {item.cartQuantity}
-                                        </p>
-                                    </div>
+                        cart.map(item => (
+                            <div key={item.id} className="group relative flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-slate-900 dark:text-white truncate">{item.name}</h4>
+                                    <p className="text-xs font-black text-indigo-600">{formatAmount(item.unit_price)}</p>
+                                </div>
 
-                                    <div className="flex flex-col items-end gap-2">
-                                        <p className="font-mono text-sm font-semibold text-slate-900">
-                                            {formatAmount((item.unit_price || 0) * item.cartQuantity)} F
-                                        </p>
-
-                                        <div className="cart-qty">
-                                            <button
-                                                type="button"
-                                                onClick={() => updateQuantity(item.id, -1)}
-                                                className="cart-qty-btn"
-                                            >
-                                                <MinusIcon className="h-3.5 w-3.5" />
-                                            </button>
-                                            <span className="w-6 text-center text-xs font-semibold text-slate-700">{item.cartQuantity}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => updateQuantity(item.id, 1)}
-                                                className="cart-qty-btn"
-                                            >
-                                                <PlusIcon className="h-3.5 w-3.5" />
-                                            </button>
-                                        </div>
-                                    </div>
-
+                                <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                                     <button
-                                        type="button"
-                                        onClick={() => removeFromCart(item.id)}
-                                        className="cart-remove-btn"
-                                        aria-label={`Retirer ${item.name}`}
+                                        onClick={() => updateQuantity(item.id, -1)}
+                                        className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
                                     >
-                                        <XMarkIcon className="h-4 w-4" />
+                                        <MinusIcon className="w-4 h-4" />
+                                    </button>
+                                    <span className="w-4 text-center text-xs font-black">{item.cartQuantity}</span>
+                                    <button
+                                        onClick={() => updateQuantity(item.id, 1)}
+                                        className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                                    >
+                                        <PlusIcon className="w-4 h-4" />
                                     </button>
                                 </div>
-                            ))}
-                        </div>
+
+                                <button
+                                    onClick={() => removeFromCart(item.id)}
+                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                                >
+                                    <TrashIcon className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))
                     )}
                 </div>
 
-                <div className="sales-cart-panel__footer">
-                    <div className="flex items-end justify-between">
-                        <span className="text-sm font-medium text-slate-500">Total à payer</span>
-                        <span className="font-mono text-3xl font-bold text-slate-900">
-                            {formatAmount(cartTotal)}
-                            <span className="text-base font-semibold text-slate-500"> F</span>
-                        </span>
+                <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 space-y-6">
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 font-bold text-sm">
+                            <span>Sous-total</span>
+                            <span>{formatAmount(cartTotal)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-indigo-500 font-black text-sm">
+                            <span className="flex items-center gap-1">
+                                <ReceiptPercentIcon className="w-4 h-4" /> Taxe (0%)
+                            </span>
+                            <span>0 CFA</span>
+                        </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={handleCheckout}
-                        disabled={cart.length === 0 || processing}
-                        className="cart-checkout-btn"
-                    >
-                        {processing ? (
-                            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/35 border-t-white" />
-                        ) : (
-                            <>
-                                <CheckCircleIcon className="h-5 w-5" />
-                                Valider la vente
-                            </>
-                        )}
-                    </button>
+                    <div className="p-6 rounded-3xl bg-slate-900 dark:bg-indigo-600 text-white shadow-xl">
+                        <div className="flex justify-between items-end mb-6">
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Total à payer</span>
+                            <span className="text-3xl font-black">{formatAmount(cartTotal).split(' ')[0]} <span className="text-sm">CFA</span></span>
+                        </div>
+                        <button
+                            onClick={handleCheckout}
+                            disabled={cart.length === 0 || processing}
+                            className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
+                        >
+                            {processing ? (
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="h-4 w-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                    Validation...
+                                </div>
+                            ) : "Valider la vente"}
+                        </button>
+                    </div>
                 </div>
-            </aside>
+            </div>
         </div>
     );
 }

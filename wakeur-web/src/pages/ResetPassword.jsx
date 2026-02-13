@@ -1,6 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import {
+    ShieldCheckIcon,
+    KeyIcon,
+    ArrowRightIcon,
+    ArrowPathIcon,
+    CheckCircleIcon,
+    ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
 
 const PASSWORD_RULES = [
     { key: 'length', label: '10 caractères minimum', test: (value) => value.length >= 10 },
@@ -15,7 +23,6 @@ const parseRecoveryParams = (urlValue) => {
         const url = new URL(urlValue);
         const queryParams = new URLSearchParams(url.search);
         const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
-
         return {
             code: queryParams.get('code') || hashParams.get('code'),
             accessToken: hashParams.get('access_token') || queryParams.get('access_token'),
@@ -28,271 +35,176 @@ const parseRecoveryParams = (urlValue) => {
 
 export default function ResetPassword() {
     const navigate = useNavigate();
-
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
     const [checkingLink, setCheckingLink] = useState(true);
     const [hasSession, setHasSession] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
 
-    const passwordChecks = useMemo(
-        () =>
-            PASSWORD_RULES.map((rule) => ({
-                ...rule,
-                passed: rule.test(password),
-            })),
-        [password],
-    );
-
-    const isPasswordStrongEnough = useMemo(
-        () => passwordChecks.every((rule) => rule.passed),
-        [passwordChecks],
-    );
+    const passwordChecks = useMemo(() => PASSWORD_RULES.map((rule) => ({ ...rule, passed: rule.test(password) })), [password]);
+    const isPasswordStrongEnough = useMemo(() => passwordChecks.every((rule) => rule.passed), [passwordChecks]);
 
     useEffect(() => {
         let isMounted = true;
-
-        const applyRecoverySession = async () => {
-            const { code, accessToken, refreshToken } = parseRecoveryParams(window.location.href);
-
-            if (code) {
-                const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-                if (exchangeError) throw exchangeError;
-                return;
-            }
-
-            if (accessToken && refreshToken) {
-                const { error: sessionError } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken,
-                });
-                if (sessionError) throw sessionError;
-            }
-        };
-
         const init = async () => {
-            setCheckingLink(true);
-            setError('');
-
+            setCheckingLink(true); setError('');
             try {
-                await applyRecoverySession();
+                const { code, accessToken, refreshToken } = parseRecoveryParams(window.location.href);
+                if (code) await supabase.auth.exchangeCodeForSession(code);
+                else if (accessToken && refreshToken) await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
                 const { data: { session } } = await supabase.auth.getSession();
-                if (isMounted) {
-                    setHasSession(Boolean(session));
-                }
+                if (isMounted) setHasSession(Boolean(session));
             } catch {
                 if (isMounted) {
                     setHasSession(false);
-                    setError('Lien invalide ou expiré. Demandez un nouveau lien de réinitialisation.');
+                    setError('Lien expiré ou corrompu. Veuillez en demander un nouveau.');
                 }
             } finally {
-                if (isMounted) {
-                    setCheckingLink(false);
-                }
+                if (isMounted) setCheckingLink(false);
             }
         };
-
         init();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (!isMounted) return;
-
-            if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                setHasSession(Boolean(session));
-            }
-
-            if (event === 'SIGNED_OUT') {
-                setHasSession(false);
-            }
-        });
-
-        return () => {
-            isMounted = false;
-            subscription.unsubscribe();
-        };
+        return () => { isMounted = false; };
     }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (loading) return;
-
-        setError('');
-        setInfo('');
-
-        if (!hasSession) {
-            setError('Session de réinitialisation absente. Demandez un nouveau lien.');
-            return;
-        }
-
-        if (!isPasswordStrongEnough) {
-            setError('Le mot de passe ne respecte pas toutes les règles de sécurité.');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            setError('Les deux mots de passe ne correspondent pas.');
+        setError(''); setInfo('');
+        if (!isPasswordStrongEnough || password !== confirmPassword) {
+            setError('Veuillez corriger les erreurs avant de continuer.');
             return;
         }
 
         setLoading(true);
         try {
             const { error: updateError } = await supabase.auth.updateUser({ password });
-            if (updateError) {
-                throw updateError;
-            }
-
-            setInfo('Mot de passe mis à jour. Redirection vers la connexion...');
-
-            // End the temporary recovery session for a clean login.
+            if (updateError) throw updateError;
+            setInfo('Mot de passe sécurisé. Redirection...');
             await supabase.auth.signOut();
-
-            window.setTimeout(() => {
-                navigate('/login?reset=success', { replace: true });
-            }, 900);
+            setTimeout(() => navigate('/login?reset=success', { replace: true }), 1500);
         } catch (err) {
-            if (/session/i.test(err.message || '')) {
-                setError('Session de réinitialisation expirée. Demandez un nouveau lien.');
-            } else {
-                setError(err.message || 'Impossible de mettre à jour le mot de passe.');
-            }
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-slate-100">
-            <div className="relative mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center p-4 sm:p-6">
-                <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl md:grid-cols-[1fr_1.1fr]">
-                    <aside className="hidden border-r border-slate-200 bg-white p-10 text-slate-900 md:block">
-                        <p className="inline-flex rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                            Sécurité du compte
-                        </p>
-                        <h1 className="mt-6 text-3xl font-bold leading-tight text-slate-900">
-                            Réinitialisation
-                            <br />
-                            renforcée
-                        </h1>
-                        <p className="mt-4 text-sm text-slate-600">
-                            Choisissez un mot de passe robuste pour protéger les données de votre boutique.
-                        </p>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 sm:p-12 overflow-hidden selection:bg-indigo-100 selection:text-indigo-600">
+            {/* Background Accents */}
+            <div className="fixed top-0 left-0 w-full h-full pointer-events-none opacity-20">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500 blur-[120px] rounded-full animate-pulse-slow"></div>
+            </div>
 
-                        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                            Utilisez un mot de passe que vous n'utilisez pas sur un autre service.
+            <div className="w-full max-w-4xl relative z-10 flex flex-col md:flex-row bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
+
+                {/* Branding Aside */}
+                <div className="md:w-[40%] bg-slate-900 p-12 flex flex-col justify-between text-white relative overflow-hidden">
+                    <div className="absolute inset-0 bg-indigo-600 opacity-10"></div>
+                    <div className="relative">
+                        <div className="h-12 w-12 bg-indigo-500 rounded-xl flex items-center justify-center mb-10 shadow-xl shadow-indigo-600/30">
+                            <KeyIcon className="w-7 h-7" />
                         </div>
-                    </aside>
+                        <h1 className="text-3xl font-black leading-tight">Sécurisation <br />de l&apos;accès.</h1>
+                        <p className="mt-6 text-slate-400 font-medium text-sm leading-relaxed">Le renouvellement du mot de passe assure la protection de vos actifs numériques.</p>
+                    </div>
+                </div>
 
-                    <main className="p-6 sm:p-10">
-                        <div className="mb-8">
-                            <h2 className="text-3xl font-bold text-slate-900">Nouveau mot de passe</h2>
-                            <p className="mt-2 text-sm text-slate-500">
-                                Entrez un mot de passe sécurisé puis confirmez-le.
-                            </p>
+                {/* Form Side */}
+                <div className="md:w-[60%] p-12 sm:p-16">
+                    <div className="max-w-md mx-auto">
+                        <div className="mb-10">
+                            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Caisse Ouverte</h2>
+                            <p className="mt-2 text-slate-500 font-medium">Définissez une nouvelle clé d&apos;entrée pour votre compte.</p>
                         </div>
 
                         {checkingLink && (
-                            <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
-                                Vérification du lien en cours...
+                            <div className="mb-8 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center gap-3 text-slate-400 text-sm font-bold">
+                                <ArrowPathIcon className="w-5 h-5 animate-spin" /> Vériﬁcation du jeton...
                             </div>
                         )}
 
                         {error && (
-                            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                            <div className="mb-8 p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold animate-shake flex items-center gap-3">
+                                <ExclamationTriangleIcon className="w-5 h-5 flex-shrink-0" />
                                 {error}
                             </div>
                         )}
 
                         {info && (
-                            <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                                {info}
+                            <div className="mb-8 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl text-emerald-600 text-sm font-bold flex items-center gap-3">
+                                <CheckCircleIcon className="w-5 h-5" /> {info}
                             </div>
                         )}
 
-                        <form className="space-y-5" onSubmit={handleSubmit}>
-                            <div>
-                                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                                    Nouveau mot de passe
-                                </label>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Nouveau Mot de Passe</label>
                                 <div className="relative">
+                                    <ShieldCheckIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
+                                        required
+                                        disabled={checkingLink || !hasSession}
+                                        className="w-full pl-14 pr-14 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50"
+                                        placeholder="Min. 10 caractères"
                                         value={password}
-                                        autoComplete="new-password"
-                                        disabled={loading || checkingLink || !hasSession}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-20 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50"
-                                        placeholder="Votre nouveau mot de passe"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword((value) => !value)}
-                                        className="absolute inset-y-0 right-3 text-xs font-semibold text-slate-500 hover:text-slate-700"
-                                    >
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-slate-300">
                                         {showPassword ? 'Masquer' : 'Voir'}
                                     </button>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                                    Confirmer le mot de passe
-                                </label>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Confirmation</label>
                                 <div className="relative">
+                                    <KeyIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                                     <input
-                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        type="password"
+                                        required
+                                        disabled={checkingLink || !hasSession}
+                                        className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50"
+                                        placeholder="Répétez la saisie"
                                         value={confirmPassword}
-                                        autoComplete="new-password"
-                                        disabled={loading || checkingLink || !hasSession}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-20 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50"
-                                        placeholder="Confirmez le mot de passe"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword((value) => !value)}
-                                        className="absolute inset-y-0 right-3 text-xs font-semibold text-slate-500 hover:text-slate-700"
-                                    >
-                                        {showConfirmPassword ? 'Masquer' : 'Voir'}
-                                    </button>
                                 </div>
                             </div>
 
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">Règles mot de passe</p>
-                                <ul className="space-y-2 text-sm">
-                                    {passwordChecks.map((rule) => (
-                                        <li key={rule.key} className={rule.passed ? 'text-emerald-700' : 'text-slate-500'}>
-                                            {rule.passed ? 'OK' : '...'} {rule.label}
-                                        </li>
+                            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl space-y-3">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Exigences de Sécurité</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                                    {passwordChecks.map(rule => (
+                                        <div key={rule.key} className="flex items-center gap-2">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${rule.passed ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                                            <span className={`text-[10px] font-bold ${rule.passed ? 'text-emerald-600' : 'text-slate-400'}`}>{rule.label}</span>
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
                             </div>
 
                             <button
                                 type="submit"
-                                disabled={loading || checkingLink || !hasSession}
-                                className="w-full rounded-xl bg-slate-900 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={loading || checkingLink || !hasSession || !isPasswordStrongEnough}
+                                className="w-full py-5 bg-indigo-600 text-white rounded-[1.8rem] font-black text-lg shadow-2xl shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:hover:scale-100"
                             >
-                                {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+                                {loading ? <div className="h-6 w-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : (
+                                    <>Valider le Changement <ArrowRightIcon className="w-5 h-5" /></>
+                                )}
                             </button>
 
-                            <div className="border-t border-slate-100 pt-4 text-center">
-                                <button
-                                    type="button"
-                                    disabled={loading}
-                                    onClick={() => navigate('/login', { replace: true })}
-                                    className="text-sm font-semibold text-slate-500 transition hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    Retour à la connexion
+                            <div className="text-center pt-6">
+                                <button type="button" onClick={() => navigate('/login')} className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors">
+                                    Annuler & Retour
                                 </button>
                             </div>
                         </form>
-                    </main>
+                    </div>
                 </div>
             </div>
         </div>

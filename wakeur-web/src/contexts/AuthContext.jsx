@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setUser(session?.user ?? null);
                     if (session?.user) {
-                        loadUserProfile(session.user.id);
+                        loadUserProfile(session.user);
                     } else {
                         setLoading(false);
                     }
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
             supabase.auth.getSession().then(({ data: { session } }) => {
                 setUser(session?.user ?? null);
                 if (session?.user) {
-                    loadUserProfile(session.user.id);
+                    loadUserProfile(session.user);
                 } else {
                     setLoading(false);
                 }
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
             if (!hasAgentSession) {
                 setUser(session?.user ?? null);
                 if (session?.user) {
-                    loadUserProfile(session.user.id);
+                    loadUserProfile(session.user);
                 } else {
                     setUserProfile(null);
                     setShopSettings(null);
@@ -78,6 +78,8 @@ export const AuthProvider = ({ children }) => {
                 .eq('id', agent.shop_id)
                 .maybeSingle();
             setShopSettings(shop);
+        } else {
+            setShopSettings(null);
         }
 
         setLoading(false);
@@ -117,16 +119,56 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const loadUserProfile = async (userId) => {
+    const loadUserProfile = async (authUser) => {
+        const userId = typeof authUser === 'string' ? authUser : authUser?.id;
+        if (!userId) {
+            setUserProfile(null);
+            setShopSettings(null);
+            setLoading(false);
+            return;
+        }
+
         try {
             // 1. Get User Profile
-            const { data: profile, error: profileError } = await supabase
+            const { data: existingProfile, error: profileError } = await supabase
                 .from('users_profile')
                 .select('*')
                 .eq('id', userId)
                 .maybeSingle();
 
             if (profileError) throw profileError;
+            let profile = existingProfile;
+
+            // New auth users should default to owner unless an explicit profile already exists.
+            if (!profile) {
+                const { data: createdProfile, error: createProfileError } = await supabase
+                    .from('users_profile')
+                    .insert({
+                        id: userId,
+                        role: 'owner',
+                        full_name: authUser?.user_metadata?.full_name ?? null,
+                        phone_number: authUser?.phone ?? null,
+                    })
+                    .select('*')
+                    .maybeSingle();
+
+                if (createProfileError) {
+                    const isDuplicateKey = createProfileError.code === '23505';
+                    if (!isDuplicateKey) throw createProfileError;
+
+                    const { data: retryProfile, error: retryError } = await supabase
+                        .from('users_profile')
+                        .select('*')
+                        .eq('id', userId)
+                        .maybeSingle();
+
+                    if (retryError) throw retryError;
+                    profile = retryProfile;
+                } else {
+                    profile = createdProfile;
+                }
+            }
+
             setUserProfile(profile);
 
             // 2. Get Shop Settings if profile exists and has shop_id
@@ -142,6 +184,8 @@ export const AuthProvider = ({ children }) => {
                 } else {
                     setShopSettings(shop);
                 }
+            } else {
+                setShopSettings(null);
             }
 
         } catch (error) {
@@ -183,7 +227,7 @@ export const AuthProvider = ({ children }) => {
         isOwner,
         isAgent,
         getShopId,
-        refreshProfile: () => user && loadUserProfile(user.id),
+        refreshProfile: () => user && loadUserProfile(user),
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

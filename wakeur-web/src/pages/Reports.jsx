@@ -6,8 +6,13 @@ import autoTable from 'jspdf-autotable';
 import {
     DocumentArrowDownIcon,
     ClipboardDocumentListIcon,
-    BanknotesIcon
+    BanknotesIcon,
+    CalendarDaysIcon,
+    ArrowPathIcon,
+    ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
+
+const formatCurrency = (val) => new Intl.NumberFormat('fr-FR').format(Math.round(val || 0)) + ' F';
 
 export default function Reports() {
     const { user } = useAuth();
@@ -16,10 +21,6 @@ export default function Reports() {
         start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
     });
-
-    const formatCurrency = (amount) => {
-        return (amount || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " F";
-    };
 
     const getDataUrl = (url) => {
         return new Promise((resolve) => {
@@ -42,7 +43,6 @@ export default function Reports() {
     const generateInventoryReport = async () => {
         setLoading(true);
         try {
-            // Fetch Inventory Data
             const { data: products, error } = await supabase
                 .from('v_inventory_with_avoir')
                 .select('*')
@@ -52,124 +52,37 @@ export default function Reports() {
 
             const doc = new jsPDF();
             const shopName = user?.shop_settings?.shop_name || 'Wakeur Sokhna';
-            const pageWidth = doc.internal.pageSize.width;
-            const startXStats = pageWidth - 80; // X position for stats section
 
-            // --- Header Design ---
-            // Background Header
-            doc.setFillColor(15, 23, 42); // Deep Navy
-            doc.rect(0, 0, pageWidth, 40, 'F');
-
-            // Title
+            // Header
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(24);
-            doc.setFont("helvetica", "bold");
             doc.text(shopName, 14, 20);
-
             doc.setFontSize(14);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(203, 213, 225); // Slate-300
-            doc.text('Catalogue & Inventaire', 14, 30);
-
-            // Date (Right aligned)
+            doc.text('Inventaire Global & Valorisation', 14, 30);
             doc.setFontSize(10);
-            doc.text(`Généré le: ${new Date().toLocaleDateString()}`, pageWidth - 14, 30, { align: 'right' });
+            doc.text(`Généré le: ${new Date().toLocaleDateString()}`, 196, 30, { align: 'right' });
 
-            let y = 50;
-            let totalValue = 0;
+            const tableData = products.map(p => [
+                p.name,
+                (p.quantity || 0).toString(),
+                formatCurrency(p.unit_price),
+                formatCurrency((p.quantity || 0) * (p.unit_price || 0))
+            ]);
 
-            // --- Product Cards ---
-            for (const product of products) {
-                const stockValue = (product.quantity || 0) * (product.unit_price || 0);
-                totalValue += stockValue;
+            autoTable(doc, {
+                startY: 50,
+                head: [['Produit', 'Quantité', 'Prix Unitaire', 'Valeur Stock']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [79, 70, 229] },
+                columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' } }
+            });
 
-                // Check for page break
-                if (y > 250) {
-                    doc.addPage();
-                    y = 20;
-                }
-
-                // Card Background
-                doc.setFillColor(248, 250, 252); // Slate-50
-                doc.setDrawColor(226, 232, 240); // Slate-200
-                doc.roundedRect(14, y, pageWidth - 28, 35, 3, 3, 'FD');
-
-                // Image
-                if (product.image_url) {
-                    try {
-                        const imgData = await getDataUrl(product.image_url);
-                        if (imgData) {
-                            doc.addImage(imgData, 'JPEG', 16, y + 2.5, 30, 30, undefined, 'FAST');
-                        }
-                    } catch (e) {
-                        console.warn('Failed to load image for PDF', e);
-                    }
-                } else {
-                    // Placeholder box if no image
-                    doc.setFillColor(226, 232, 240);
-                    doc.rect(16, y + 2.5, 30, 30, 'F');
-                    doc.setFontSize(8);
-                    doc.setTextColor(100, 116, 139);
-                    doc.text('No Image', 31, y + 17, { align: 'center' });
-                }
-
-                // Product Name & Category
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(12);
-                doc.setTextColor(15, 23, 42); // Slate-900
-                doc.text(product.name, 50, y + 10);
-
-                doc.setTextColor(15, 23, 42);
-                doc.text(formatCurrency(product.unit_price), startXStats, y + 15);
-
-                // Quantity
-                doc.setFontSize(8);
-                doc.setTextColor(100, 116, 139);
-                doc.text('Quantité', startXStats + 35, y + 10);
-                doc.setFontSize(10);
-                doc.setTextColor(15, 23, 42);
-                doc.setFont("helvetica", "bold");
-                if (product.quantity <= (product.min_stock_level || 5)) {
-                    doc.setTextColor(220, 38, 38); // Red for low stock
-                }
-                doc.text((product.quantity || 0).toString(), startXStats + 35, y + 15);
-
-                // Total Value
-                doc.setFont("helvetica", "normal");
-                doc.setFontSize(8);
-                doc.setTextColor(100, 116, 139);
-                doc.text('Valeur Stock', startXStats + 60, y + 10);
-                doc.setFontSize(10);
-                doc.setTextColor(15, 23, 42);
-                doc.setFont("helvetica", "bold");
-                doc.text(formatCurrency(stockValue), startXStats + 60, y + 15);
-
-                y += 40; // Move to next card position
-            }
-
-            // --- Footer Summary ---
-            // Check if we need a new page for summary
-            if (y > 250) {
-                doc.addPage();
-                y = 20;
-            }
-
-            y += 10;
-            doc.setFillColor(15, 23, 42);
-            doc.rect(14, y, pageWidth - 28, 20, 'F');
-
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.text('VALEUR TOTALE DU STOCK', 20, y + 13);
-
-            doc.text(formatCurrency(totalValue), pageWidth - 20, y + 13, { align: 'right' });
-
-            doc.save(`inventaire_${new Date().toISOString().split('T')[0]}.pdf`);
-
+            doc.save(`Inventaire_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
-            console.error('Error generating inventory report:', error);
-            alert('Erreur: ' + (error.message || error));
+            console.error(error);
         } finally {
             setLoading(false);
         }
@@ -178,7 +91,6 @@ export default function Reports() {
     const generateMobileMoneyReport = async () => {
         setLoading(true);
         try {
-            // Fetch Mobile Money Data
             const { data: transactions, error } = await supabase
                 .from('mm_transactions')
                 .select('*, mm_platforms(name)')
@@ -189,146 +101,122 @@ export default function Reports() {
             if (error) throw error;
 
             const doc = new jsPDF();
-            const shopName = user?.shop_settings?.shop_name || 'Wakeur Sokhna';
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.text('Wakeur Sokhna', 14, 20);
+            doc.setFontSize(14);
+            doc.text('Rapport Mobile Money', 14, 30);
+            doc.setFontSize(10);
+            doc.text(`${dateRange.start} au ${dateRange.end}`, 196, 30, { align: 'right' });
 
-            // Header
-            doc.setFontSize(20);
-            doc.text(shopName, 14, 22);
-            doc.setFontSize(12);
-            doc.text('Rapport Mobile Money', 14, 32);
-            doc.text(`Période: ${new Date(dateRange.start).toLocaleDateString()} - ${new Date(dateRange.end).toLocaleDateString()}`, 14, 40);
-
-            // Table
-            const tableColumn = ["Date", "Opérateur", "Type", "Montant", "Frais", "Statut"];
-            const tableRows = [];
-
-            let totalIn = 0;
-            let totalOut = 0;
-            let totalFees = 0;
-
-            transactions.forEach(t => {
-                if (t.type === 'encaissement') totalIn += t.amount;
-                if (t.type === 'decaissement') totalOut += t.amount;
-                totalFees += t.fees || 0;
-
-                const rowData = [
-                    new Date(t.transaction_date).toLocaleDateString(),
-                    t.mm_platforms?.name || t.service?.toUpperCase() || '-',
-                    t.type === 'encaissement' ? 'Dépôt' : 'Retrait',
-                    formatCurrency(t.amount),
-                    formatCurrency(t.fees),
-                    t.status
-                ];
-                tableRows.push(rowData);
-            });
+            const tableRows = transactions.map(t => [
+                new Date(t.transaction_date).toLocaleDateString(),
+                t.mm_platforms?.name || 'MM',
+                t.type === 'encaissement' ? 'Dépôt' : 'Retrait',
+                formatCurrency(t.amount),
+                formatCurrency(t.fees || 0)
+            ]);
 
             autoTable(doc, {
-                head: [tableColumn],
-                body: tableRows,
                 startY: 50,
-                theme: 'grid',
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [39, 174, 96] }
+                head: [['Date', 'Opérateur', 'Type', 'Montant', 'Commissions']],
+                body: tableRows,
+                theme: 'striped',
+                headStyles: { fillColor: [16, 185, 129] },
+                columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' } }
             });
 
-            // Summary
-            const finalY = doc.lastAutoTable.finalY || 50;
-            doc.setFontSize(10);
-            doc.text('Résumé de la période:', 14, finalY + 15);
-            doc.text(`Total Dépôts (Encaissements): ${formatCurrency(totalIn)}`, 14, finalY + 25);
-            doc.text(`Total Retraits (Décaissements): ${formatCurrency(totalOut)}`, 14, finalY + 35);
-            doc.text(`Total Commissions: ${formatCurrency(totalFees)}`, 14, finalY + 45);
-
-            doc.save(`mobile_money_${dateRange.start}_${dateRange.end}.pdf`);
-
+            doc.save(`Rapport_MM_${dateRange.start}.pdf`);
         } catch (error) {
-            console.error('Error generating MM report:', error);
-            alert('Erreur: ' + (error.message || error));
+            console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-10 animate-fade-in">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Rapports & Analyses</h1>
-                <p className="text-gray-500 text-lg">Générez des documents PDF professionnels</p>
-            </div>
-
-            {/* Date Filter */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Début</label>
-                    <input
-                        type="date"
-                        className="px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={dateRange.start}
-                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Fin</label>
-                    <input
-                        type="date"
-                        className="px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={dateRange.end}
-                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                    />
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Rapports & Archives</h1>
+                    <p className="mt-2 text-slate-500 font-medium">Téléchargez des rapports PDF professionnels pour votre comptabilité.</p>
                 </div>
             </div>
 
-            {/* Report Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Inventory Report Card */}
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                        <ClipboardDocumentListIcon className="w-6 h-6 text-blue-600" />
+            {/* Date Picker Section */}
+            <div className="premium-card p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col md:flex-row items-end gap-6">
+                    <div className="flex-1 space-y-2">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-1">Période du Rapport</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="relative">
+                                <CalendarDaysIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 pointer-events-none" />
+                                <input
+                                    type="date"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-black text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                    value={dateRange.start}
+                                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                />
+                            </div>
+                            <div className="relative">
+                                <CalendarDaysIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 pointer-events-none" />
+                                <input
+                                    type="date"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-black text-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                    value={dateRange.end}
+                                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Rapport d'Inventaire</h3>
-                    <p className="text-gray-500 mb-6">
-                        État actuel du stock, valorisation (avoir) et détails par produit.
-                    </p>
-                    <button
-                        onClick={generateInventoryReport}
-                        disabled={loading}
-                        className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
-                        ) : (
-                            <>
-                                <DocumentArrowDownIcon className="w-5 h-5" />
-                                Télécharger PDF
-                            </>
-                        )}
-                    </button>
+                </div>
+            </div>
+
+            {/* Report Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+                {/* Inventory */}
+                <div className="premium-card group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all overflow-hidden">
+                    <div className="p-10 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
+                        <div className="h-16 w-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <ClipboardDocumentListIcon className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 dark:text-white">Inventaire & Stock</h3>
+                        <p className="mt-2 text-slate-500 font-medium leading-relaxed">Générez un état des lieux complet de vos produits, quantités en stock et valeur marchande totale.</p>
+                    </div>
+                    <div className="p-6">
+                        <button
+                            onClick={generateInventoryReport}
+                            disabled={loading}
+                            className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 active:scale-95 transition-all text-xs uppercase tracking-[0.2em]"
+                        >
+                            {loading ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <ArrowDownTrayIcon className="w-5 h-5" />}
+                            Exporter au Format PDF
+                        </button>
+                    </div>
                 </div>
 
-                {/* Mobile Money Report Card */}
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                        <BanknotesIcon className="w-6 h-6 text-green-600" />
+                {/* Mobile Money */}
+                <div className="premium-card group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/50 transition-all overflow-hidden">
+                    <div className="p-10 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
+                        <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <BanknotesIcon className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 dark:text-white">Rapport Mobile Money</h3>
+                        <p className="mt-2 text-slate-500 font-medium leading-relaxed">Historique détaillé des transactions digitales, commissions perçues et flux entre opérateurs sélectionnés.</p>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Rapport Mobile Money</h3>
-                    <p className="text-gray-500 mb-6">
-                        Historique des transactions, dépôts, retraits et commissions sur la période sélectionnée.
-                    </p>
-                    <button
-                        onClick={generateMobileMoneyReport}
-                        disabled={loading}
-                        className="w-full py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
-                        ) : (
-                            <>
-                                <DocumentArrowDownIcon className="w-5 h-5" />
-                                Télécharger PDF
-                            </>
-                        )}
-                    </button>
+                    <div className="p-6">
+                        <button
+                            onClick={generateMobileMoneyReport}
+                            disabled={loading}
+                            className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all text-xs uppercase tracking-[0.2em]"
+                        >
+                            {loading ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <ArrowDownTrayIcon className="w-5 h-5" />}
+                            Générer l&apos;Analyse MM
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

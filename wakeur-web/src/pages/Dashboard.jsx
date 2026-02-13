@@ -20,6 +20,8 @@ import {
     CubeIcon,
     ExclamationTriangleIcon,
     ShoppingCartIcon,
+    ArrowUpIcon,
+    ArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 ChartJS.register(
@@ -242,14 +244,18 @@ export default function Dashboard() {
         loadDashboardData();
     }, [user, loadDashboardData]);
 
-    const chartTextColor = isDark ? '#d2d9e6' : '#475569';
-    const chartGridColor = isDark ? 'rgba(134, 148, 174, 0.24)' : 'rgba(148, 163, 184, 0.25)';
-    const chartBorderColor = isDark ? '#9fb0cb' : '#607690';
-    const categoryPalette = useMemo(() => (
-        isDark
-            ? ['rgba(122, 145, 186, 0.68)', 'rgba(167, 154, 123, 0.68)', 'rgba(137, 168, 152, 0.68)', 'rgba(165, 129, 134, 0.68)', 'rgba(140, 132, 176, 0.68)', 'rgba(126, 149, 141, 0.68)']
-            : ['rgba(90, 112, 145, 0.62)', 'rgba(141, 131, 102, 0.62)', 'rgba(92, 133, 123, 0.62)', 'rgba(141, 103, 108, 0.62)', 'rgba(112, 102, 145, 0.62)', 'rgba(115, 135, 126, 0.62)']
-    ), [isDark]);
+    const chartTextColor = isDark ? '#94a3b8' : '#64748b';
+    const chartGridColor = isDark ? '#1e293b' : '#f1f5f9';
+    const primaryColor = '#4f46e5';
+
+    const categoryPalette = useMemo(() => ([
+        'rgba(79, 70, 229, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(236, 72, 153, 0.8)'
+    ]), []);
 
     const salesTrendData = useMemo(() => ({
         labels: salesTrend.labels,
@@ -257,28 +263,28 @@ export default function Dashboard() {
             {
                 label: 'Ventes (CFA)',
                 data: salesTrend.values,
-                borderColor: chartBorderColor,
-                backgroundColor: isDark ? 'rgba(123, 141, 178, 0.24)' : 'rgba(100, 121, 150, 0.2)',
+                borderColor: primaryColor,
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
                 fill: true,
-                tension: 0.35,
-                pointRadius: 3.5,
-                pointHoverRadius: 5,
-                pointBackgroundColor: isDark ? '#d6e1f5' : '#4f637f',
-                pointBorderWidth: 0,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: primaryColor,
+                pointBorderWidth: 2,
+                pointBorderColor: '#fff',
             },
         ],
-    }), [salesTrend, chartBorderColor, isDark]);
+    }), [salesTrend]);
 
     const categoryData = useMemo(() => ({
         labels: categoryBreakdown.labels,
         datasets: [
             {
-                label: 'Valeur par catégorie (CFA)',
                 data: categoryBreakdown.values,
-                backgroundColor: categoryBreakdown.labels.map((_, index) => categoryPalette[index % categoryPalette.length]),
-                borderColor: isDark ? '#1f2432' : '#f3f5f9',
-                borderWidth: 2,
-                hoverOffset: 8,
+                backgroundColor: categoryPalette,
+                borderColor: isDark ? '#0f172a' : '#fff',
+                borderWidth: 4,
+                hoverOffset: 15,
             },
         ],
     }), [categoryBreakdown, categoryPalette, isDark]);
@@ -289,68 +295,43 @@ export default function Dashboard() {
             {
                 label: 'Ventes mensuelles (CFA)',
                 data: monthlySales.values,
-                backgroundColor: isDark ? 'rgba(126, 143, 174, 0.62)' : 'rgba(102, 120, 149, 0.55)',
-                borderColor: chartBorderColor,
-                borderWidth: 1.2,
+                backgroundColor: 'rgba(79, 70, 229, 0.8)',
                 borderRadius: 8,
-                borderSkipped: false,
-                maxBarThickness: 38,
+                maxBarThickness: 32,
             },
         ],
-    }), [monthlySales, chartBorderColor, isDark]);
+    }), [monthlySales]);
 
     const cartesianChartOptions = useMemo(() => ({
         maintainAspectRatio: false,
         responsive: true,
-        interaction: {
-            mode: 'index',
-            intersect: false,
-        },
         plugins: {
-            legend: {
-                display: false,
-            },
+            legend: { display: false },
             tooltip: {
-                backgroundColor: isDark ? '#111625' : '#1f2937',
-                titleColor: '#f8fafc',
-                bodyColor: '#f8fafc',
-                padding: 10,
+                backgroundColor: isDark ? '#1e293b' : '#fff',
+                titleColor: isDark ? '#f8fafc' : '#0f172a',
+                bodyColor: isDark ? '#94a3b8' : '#64748b',
+                padding: 12,
+                borderColor: isDark ? '#334155' : '#e2e8f0',
+                borderWidth: 1,
+                displayColors: false,
                 callbacks: {
-                    label: (context) => {
-                        const value = context.parsed.y ?? context.parsed ?? 0;
-                        return `${formatAmount(value)} CFA`;
-                    },
+                    label: (context) => `${formatAmount(context.parsed.y)} CFA`,
                 },
             },
         },
         scales: {
             x: {
-                grid: {
-                    color: 'transparent',
-                    drawBorder: false,
-                },
-                ticks: {
-                    color: chartTextColor,
-                    maxRotation: 0,
-                    minRotation: 0,
-                    font: {
-                        size: 11,
-                        weight: 500,
-                    },
-                },
+                grid: { display: false },
+                ticks: { color: chartTextColor, font: { size: 11, weight: '600' } },
             },
             y: {
                 beginAtZero: true,
-                grid: {
-                    color: chartGridColor,
-                    drawBorder: false,
-                },
+                grid: { color: chartGridColor },
                 ticks: {
                     color: chartTextColor,
-                    callback: (value) => formatAmount(value),
-                    font: {
-                        size: 11,
-                    },
+                    font: { size: 10 },
+                    callback: (value) => formatAmount(value)
                 },
             },
         },
@@ -359,28 +340,24 @@ export default function Dashboard() {
     const doughnutOptions = useMemo(() => ({
         maintainAspectRatio: false,
         responsive: true,
-        cutout: '58%',
+        cutout: '75%',
         plugins: {
             legend: {
                 position: 'bottom',
                 labels: {
                     color: chartTextColor,
                     usePointStyle: true,
-                    pointStyle: 'circle',
-                    boxWidth: 10,
-                    boxHeight: 10,
-                    padding: 16,
-                    font: {
-                        size: 12,
-                        weight: 500,
-                    },
+                    padding: 20,
+                    font: { size: 12, weight: '600' },
                 },
             },
             tooltip: {
-                backgroundColor: isDark ? '#111625' : '#1f2937',
-                titleColor: '#f8fafc',
-                bodyColor: '#f8fafc',
-                padding: 10,
+                backgroundColor: isDark ? '#1e293b' : '#fff',
+                titleColor: isDark ? '#f8fafc' : '#0f172a',
+                bodyColor: isDark ? '#94a3b8' : '#64748b',
+                padding: 12,
+                borderColor: isDark ? '#334155' : '#e2e8f0',
+                borderWidth: 1,
                 callbacks: {
                     label: (context) => `${context.label}: ${formatAmount(context.parsed)} CFA`,
                 },
@@ -388,177 +365,196 @@ export default function Dashboard() {
         },
     }), [chartTextColor, isDark]);
 
-    const hasSalesTrendData = salesTrend.values.some((value) => value > 0);
-    const hasCategoryData = categoryBreakdown.values.some((value) => value > 0);
-    const hasMonthlySalesData = monthlySales.values.some((value) => value > 0);
-
     const metricCards = [
         {
             key: 'revenue',
-            label: 'Revenu total',
+            label: 'Revenu Total',
             value: formatCurrency(stats.totalRevenue),
-            meta: `${stats.totalTransactions} transaction${stats.totalTransactions > 1 ? 's' : ''}`,
-            tone: 'slate',
-            icon: <BanknotesIcon className="h-5 w-5" />,
+            meta: `${stats.totalTransactions} transactions`,
+            trend: '+12%',
+            trendUp: true,
+            icon: <BanknotesIcon className="h-6 w-6" />,
+            color: 'indigo'
         },
         {
             key: 'today',
-            label: 'Ventes du jour',
+            label: 'Ventes du Jour',
             value: formatCurrency(stats.todaySales),
-            meta: `Semaine : ${formatCurrency(stats.thisWeekSales)}`,
-            tone: 'green',
-            icon: <ShoppingCartIcon className="h-5 w-5" />,
+            meta: `Semaine: ${formatCurrency(stats.thisWeekSales)}`,
+            trend: '+5%',
+            trendUp: true,
+            icon: <ShoppingCartIcon className="h-6 w-6" />,
+            color: 'emerald'
         },
         {
             key: 'stockValue',
-            label: 'Valeur du stock',
+            label: 'Valeur du Stock',
             value: formatCurrency(stats.totalStockValue),
-            meta: `${stats.totalProducts} produit${stats.totalProducts > 1 ? 's' : ''} en stock`,
-            tone: 'violet',
-            icon: <CubeIcon className="h-5 w-5" />,
+            meta: `${stats.totalProducts} produits en stock`,
+            icon: <CubeIcon className="h-6 w-6" />,
+            color: 'amber'
         },
         {
             key: 'alerts',
-            label: 'Alertes stock',
+            label: 'Alertes Stock',
             value: `${stats.lowStock}`,
-            meta: stats.lowStock > 0 ? 'Attention requise' : 'Aucune alerte',
-            tone: stats.lowStock > 0 ? 'red' : 'green',
-            icon: <ExclamationTriangleIcon className="h-5 w-5" />,
+            meta: stats.lowStock > 0 ? 'Rupture imminente' : 'Stock optimal',
+            trend: stats.lowStock > 0 ? '-3%' : '0%',
+            trendUp: stats.lowStock === 0,
+            icon: <ExclamationTriangleIcon className="h-6 w-6" />,
+            color: stats.lowStock > 0 ? 'rose' : 'emerald'
         },
     ];
 
     return (
-        <div className="space-y-8">
-            <section className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-10 animate-fade-in">
+            {/* Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{shopName}</p>
-                    <h1 className="mt-1 text-3xl font-bold text-slate-900">Vue d&apos;ensemble financière</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
+                    <p className="mt-2 text-slate-500 font-medium">Suivez l&apos;activité de <span className="text-indigo-600 dark:text-indigo-400 font-bold">{shopName}</span> en temps réel.</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
-                    {lastUpdated ? `Mise à jour : ${lastUpdated.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : 'Chargement...'}
-                </div>
-            </section>
-
-            <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-                {metricCards.map((card) => (
-                    <article key={card.key} className={`metric-card metric-card--${card.tone}`}>
-                        <div className="metric-card__head">
-                            <p className="metric-card__label">{card.label}</p>
-                            <span className="metric-card__icon">{card.icon}</span>
-                        </div>
-                        <p className="metric-card__value">{card.value}</p>
-                        <p className="metric-card__meta">{card.meta}</p>
-                    </article>
-                ))}
-            </section>
-
-            <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                <article className="chart-card">
-                    <div className="chart-card__header">
-                        <h2 className="chart-card__title">Tendance des ventes</h2>
-                        <p className="chart-card__subtitle">7 derniers jours</p>
+                {lastUpdated && (
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 shadow-sm">
+                        <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
+                        Mis à jour à {lastUpdated.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
-                    <div className="chart-card__canvas">
-                        {!isLoading && hasSalesTrendData ? (
+                )}
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                {metricCards.map((card) => (
+                    <div key={card.key} className="metric-card-new group h-full flex flex-col justify-between">
+                        <div className="flex items-start justify-between">
+                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-${card.color}-50 dark:bg-${card.color}-500/10 text-${card.color}-600 dark:text-${card.color}-400 group-hover:scale-110 transition-transform duration-300`}>
+                                {card.icon}
+                            </div>
+                            {card.trend && (
+                                <div className={`flex items-center gap-1 text-xs font-black ${card.trendUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {card.trendUp ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
+                                    {card.trend}
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-500 transition-colors uppercase">{card.label}</h3>
+                            <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white truncate">{card.value}</p>
+                            <p className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500">{card.meta}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+                {/* Sales Chart */}
+                <div className="xl:col-span-2 premium-card p-8 bg-white dark:bg-slate-900">
+                    <div className="mb-8 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 dark:text-white">Performance des Ventes</h2>
+                            <p className="text-sm font-bold text-slate-400">Analyse des 7 derniers jours</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="h-2 w-2 rounded-full bg-indigo-600"></div>
+                        </div>
+                    </div>
+                    <div className="h-[320px] w-full">
+                        {!isLoading && salesTrend.values.length > 0 ? (
                             <Line data={salesTrendData} options={cartesianChartOptions} />
                         ) : (
-                            <div className="chart-placeholder">Pas encore de ventes sur cette période.</div>
+                            <div className="flex h-full items-center justify-center text-slate-400 font-bold border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
+                                Aucune donnée disponible
+                            </div>
                         )}
                     </div>
-                </article>
+                </div>
 
-                <article className="chart-card">
-                    <div className="chart-card__header">
-                        <h2 className="chart-card__title">Répartition par catégorie</h2>
-                        <p className="chart-card__subtitle">Valorisation actuelle du stock</p>
+                {/* Category Doughnut */}
+                <div className="premium-card p-8 bg-white dark:bg-slate-900 flex flex-col">
+                    <div className="mb-8">
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white">Stock par Catégorie</h2>
+                        <p className="text-sm font-bold text-slate-400">Valeur totale répartie</p>
                     </div>
-                    <div className="chart-card__canvas">
-                        {!isLoading && hasCategoryData ? (
+                    <div className="relative flex-1 min-h-[300px]">
+                        {!isLoading && categoryBreakdown.values.length > 0 ? (
                             <Doughnut data={categoryData} options={doughnutOptions} />
                         ) : (
-                            <div className="chart-placeholder">Aucune donnée de stock à afficher.</div>
+                            <div className="flex h-full items-center justify-center text-slate-400 font-bold border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
+                                Pas de stock
+                            </div>
                         )}
-                    </div>
-                </article>
-            </section>
-
-            <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                <article className="chart-card">
-                    <div className="chart-card__header">
-                        <h2 className="chart-card__title">Ventes mensuelles</h2>
-                        <p className="chart-card__subtitle">6 derniers mois</p>
-                    </div>
-                    <div className="chart-card__canvas">
-                        {!isLoading && hasMonthlySalesData ? (
-                            <Bar data={monthlySalesData} options={cartesianChartOptions} />
-                        ) : (
-                            <div className="chart-placeholder">Aucune vente mensuelle enregistrée.</div>
-                        )}
-                    </div>
-                </article>
-
-                <article className="chart-card">
-                    <div className="chart-card__header">
-                        <h2 className="chart-card__title">Alertes stock faible</h2>
-                        <p className="chart-card__subtitle">{stats.lowStock} produit{stats.lowStock > 1 ? 's' : ''} concerné{stats.lowStock > 1 ? 's' : ''}</p>
-                    </div>
-                    {lowStockProducts.length > 0 ? (
-                        <div className="space-y-3">
-                            {lowStockProducts.map((product) => (
-                                <div key={product.id} className="stock-alert-row">
-                                    <div>
-                                        <p className="font-semibold text-slate-900">{product.name}</p>
-                                        <p className="text-sm text-slate-500">{product.category_name || 'Sans catégorie'}</p>
-                                    </div>
-                                    <div className="stock-alert-row__count">
-                                        {formatAmount(product.quantity)}
-                                        <span>en stock</span>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center pt-8">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total</p>
+                            <p className="text-lg font-black text-slate-900 dark:text-white">{formatCurrency(stats.totalStockValue).split(' ')[0]}</p>
                         </div>
-                    ) : (
-                        <div className="chart-placeholder">Aucune alerte de stock faible.</div>
-                    )}
-                </article>
-            </section>
-
-            <section className="chart-card">
-                <div className="chart-card__header">
-                    <h2 className="chart-card__title">Top 5 produits vendus</h2>
-                    <p className="chart-card__subtitle">Classement par chiffre d&apos;affaires</p>
-                </div>
-                {topProducts.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                            <thead className="border-b border-slate-200 text-left">
-                                <tr className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                                    <th className="px-4 py-3">Rang</th>
-                                    <th className="px-4 py-3">Produit</th>
-                                    <th className="px-4 py-3">Quantité vendue</th>
-                                    <th className="px-4 py-3">Revenu</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {topProducts.map((product, index) => (
-                                    <tr key={`${product.name}-${index}`} className="border-b border-slate-100 last:border-b-0">
-                                        <td className="px-4 py-3">
-                                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
-                                                {index + 1}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm font-semibold text-slate-900">{product.name}</td>
-                                        <td className="px-4 py-3 text-sm text-slate-600">{formatAmount(product.quantity)}</td>
-                                        <td className="px-4 py-3 text-sm font-semibold text-slate-800">{formatCurrency(product.revenue)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
                     </div>
-                ) : (
-                    <div className="chart-placeholder">Aucune vente enregistrée pour le moment.</div>
-                )}
-            </section>
+                </div>
+            </div>
+
+            {/* Bottom Row: Lists */}
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                {/* Top Products */}
+                <div className="premium-card flex flex-col bg-white dark:bg-slate-900">
+                    <div className="border-b border-slate-100 dark:border-slate-800 p-8">
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white">Top 5 Produits</h2>
+                        <p className="text-sm font-bold text-slate-400">Meilleures performances</p>
+                    </div>
+                    <div className="p-4 flex-1">
+                        {topProducts.length > 0 ? (
+                            <div className="space-y-2">
+                                {topProducts.map((p, i) => (
+                                    <div key={i} className="flex items-center gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 font-black text-sm">
+                                            #{i + 1}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{p.name}</p>
+                                            <p className="text-xs font-bold text-slate-400">{formatAmount(p.quantity)} vendus</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-black text-slate-900 dark:text-white">{formatCurrency(p.revenue)}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-20 text-center font-bold text-slate-300">Aucune vente enregistrée</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Stock Alerts */}
+                <div className="premium-card flex flex-col bg-white dark:bg-slate-900">
+                    <div className="border-b border-slate-100 dark:border-slate-800 p-8">
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white">Alertes de Stock</h2>
+                        <p className="text-sm font-bold text-slate-400">Rapprovisionnement nécessaire</p>
+                    </div>
+                    <div className="p-4 flex-1">
+                        {lowStockProducts.length > 0 ? (
+                            <div className="space-y-2">
+                                {lowStockProducts.map((p, i) => (
+                                    <div key={i} className="flex items-center gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600">
+                                            <ExclamationTriangleIcon className="h-5 w-5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{p.name}</p>
+                                            <p className="text-xs font-bold text-slate-400">{p.category_name || 'Sans catégorie'}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-black text-rose-600">{p.quantity} <span className="text-[10px] font-bold text-slate-400 uppercase">restant</span></p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-20 text-center font-bold text-emerald-400">Stock optimal</div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
+

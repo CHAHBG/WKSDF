@@ -6,12 +6,13 @@ import {
     CalendarIcon,
     CheckCircleIcon,
     XCircleIcon,
-    ClockIcon
+    ClockIcon,
+    ArrowPathIcon,
+    DocumentTextIcon,
+    CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
-const TRANSFER_DATE_COLUMNS = ['created_at', 'date', 'transfer_date'];
-
-const resolveTransferDate = (transfer) => transfer.created_at || transfer.date || transfer.transfer_date;
+const formatCurrency = (val) => new Intl.NumberFormat('fr-FR').format(Math.round(val || 0)) + ' CFA';
 
 export default function Transfers() {
     const { user } = useAuth();
@@ -25,32 +26,15 @@ export default function Transfers() {
     }, [user]);
 
     const fetchTransfers = async () => {
+        setLoading(true);
         try {
-            let queryResult = null;
-            let lastError = null;
+            const { data, error } = await supabase
+                .from('transfers')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-            for (const dateColumn of TRANSFER_DATE_COLUMNS) {
-                queryResult = await supabase
-                    .from('transfers')
-                    .select('*')
-                    .order(dateColumn, { ascending: false });
-
-                if (!queryResult.error) {
-                    break;
-                }
-
-                if (queryResult.error.code !== '42703') {
-                    throw queryResult.error;
-                }
-
-                lastError = queryResult.error;
-            }
-
-            if (queryResult?.error) {
-                throw queryResult.error || lastError;
-            }
-
-            setTransfers(queryResult?.data || []);
+            if (error) throw error;
+            setTransfers(data || []);
         } catch (error) {
             console.error('Error fetching transfers:', error);
         } finally {
@@ -58,111 +42,163 @@ export default function Transfers() {
         }
     };
 
-    const getStatusColor = (status) => {
+    const getStatusStyle = (status) => {
         switch ((status || '').toLowerCase()) {
             case 'completed':
             case 'succes':
-                return 'bg-emerald-100 text-emerald-800';
+                return {
+                    bg: 'bg-emerald-50 dark:bg-emerald-500/10',
+                    text: 'text-emerald-600',
+                    icon: CheckCircleIcon
+                };
             case 'pending':
             case 'en attente':
-                return 'bg-amber-100 text-amber-800';
+                return {
+                    bg: 'bg-amber-50 dark:bg-amber-500/10',
+                    text: 'text-amber-600',
+                    icon: ClockIcon
+                };
             case 'failed':
             case 'echec':
-                return 'bg-rose-100 text-rose-800';
+                return {
+                    bg: 'bg-rose-50 dark:bg-rose-500/10',
+                    text: 'text-rose-600',
+                    icon: XCircleIcon
+                };
             default:
-                return 'bg-slate-100 text-slate-800';
-        }
-    };
-
-    const getStatusIcon = (status) => {
-        switch ((status || '').toLowerCase()) {
-            case 'completed':
-            case 'succes':
-                return <CheckCircleIcon className="mr-1 h-4 w-4" />;
-            case 'pending':
-            case 'en attente':
-                return <ClockIcon className="mr-1 h-4 w-4" />;
-            case 'failed':
-            case 'echec':
-                return <XCircleIcon className="mr-1 h-4 w-4" />;
-            default:
-                return null;
+                return {
+                    bg: 'bg-slate-50 dark:bg-slate-500/10',
+                    text: 'text-slate-600',
+                    icon: ClockIcon
+                };
         }
     };
 
     if (loading) return (
-        <div className="flex min-h-screen items-center justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-transparent"></div>
+        <div className="flex h-96 items-center justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
         </div>
     );
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            <div className="flex items-center justify-between">
+        <div className="space-y-10 animate-fade-in">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="mb-2 text-3xl font-bold text-slate-900">Historique des Transferts</h1>
-                    <p className="text-lg text-slate-500">Suivez tous les transferts d'argent effectues</p>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Historique des Transferts</h1>
+                    <p className="mt-2 text-slate-500 font-medium">Consultez l&apos;ensemble des mouvements de fonds inter-comptes.</p>
                 </div>
-                <div className="flex items-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm">
-                    <ArrowsRightLeftIcon className="mr-2 h-5 w-5" />
-                    {transfers.length} Transferts total
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={fetchTransfers}
+                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 transition-all dark:bg-slate-900 dark:border-slate-800"
+                    >
+                        <ArrowPathIcon className="h-5 w-5" />
+                    </button>
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm font-bold text-sm text-slate-600 dark:text-slate-300">
+                        <ArrowsRightLeftIcon className="w-5 h-5 text-indigo-500" />
+                        {transfers.length} Opérations
+                    </div>
                 </div>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            {/* Quick Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="premium-card p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Transféré (Mois)</p>
+                    <div className="flex items-end gap-2">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white">
+                            {formatCurrency(transfers.reduce((acc, t) => acc + (t.amount || 0), 0)).split(' ')[0]}
+                        </span>
+                        <span className="text-xs font-bold text-slate-400 mb-1">CFA</span>
+                    </div>
+                </div>
+                <div className="premium-card p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Completé</p>
+                    <div className="flex items-end gap-2 text-emerald-500">
+                        <span className="text-2xl font-black">{transfers.filter(t => t.status?.toLowerCase().includes('succes') || t.status?.toLowerCase().includes('complete')).length}</span>
+                        <span className="text-xs font-bold mb-1">Opérations</span>
+                    </div>
+                </div>
+                <div className="premium-card p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">En Attente / Échec</p>
+                    <div className="flex items-end gap-2 text-rose-500">
+                        <span className="text-2xl font-black">{transfers.filter(t => !t.status?.toLowerCase().includes('succes') && !t.status?.toLowerCase().includes('complete')).length}</span>
+                        <span className="text-xs font-bold mb-1">Opérations</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Table */}
+            <div className="premium-card overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="border-b border-slate-200 bg-slate-50">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Date & heure</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Type</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Description</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Montant</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Statut</th>
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <th className="px-8 py-5 text-[11px] font-black uppercase tracking-widest text-slate-400">Date & Heure</th>
+                                <th className="px-6 py-5 text-[11px] font-black uppercase tracking-widest text-slate-400">Type</th>
+                                <th className="px-6 py-5 text-[11px] font-black uppercase tracking-widest text-slate-400">Désignation</th>
+                                <th className="px-6 py-5 text-[11px] font-black uppercase tracking-widest text-slate-400 text-right">Montant</th>
+                                <th className="px-8 py-5 text-[11px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {transfers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-400">
-                                        <ArrowsRightLeftIcon className="mx-auto mb-3 h-12 w-12 text-slate-200" />
-                                        <p>Aucun transfert trouve</p>
+                                    <td colSpan="5" className="px-8 py-20 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <ArrowsRightLeftIcon className="h-16 w-16 text-slate-100 dark:text-slate-800 mb-4" />
+                                            <p className="text-slate-400 font-bold italic">Aucune donnée de transfert disponible.</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
-                                transfers.map((transfer) => {
-                                    const transferDate = resolveTransferDate(transfer);
+                                transfers.map((t) => {
+                                    const statusStyle = getStatusStyle(t.status);
+                                    const StatusIcon = statusStyle.icon;
+                                    const date = t.created_at || t.date || t.transfer_date;
                                     return (
-                                        <tr key={transfer.id} className="transition-colors hover:bg-slate-50">
-                                            <td className="whitespace-nowrap px-6 py-4">
-                                                <div className="flex items-center text-sm text-slate-600">
-                                                    <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                                                    {transferDate ? new Date(transferDate).toLocaleDateString('fr-FR') : '-'}
-                                                    {transferDate && (
-                                                        <>
-                                                            <span className="mx-2 text-slate-300">|</span>
-                                                            {new Date(transferDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                                        </>
-                                                    )}
+                                        <tr key={t.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                            <td className="px-8 py-5 whitespace-nowrap">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        <CalendarIcon className="w-4 h-4 text-slate-400" />
+                                                        <span className="text-sm font-black text-slate-900 dark:text-white">
+                                                            {new Date(date).toLocaleDateString('fr-FR')}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-slate-400 ml-6 uppercase">
+                                                        {new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td className="whitespace-nowrap px-6 py-4">
-                                                <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-700">
-                                                    {transfer.type || 'Transfer'}
+                                            <td className="px-6 py-5">
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-[10px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/20">
+                                                    {t.type || 'Transfert'}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                {transfer.description || '-'}
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                                        <DocumentTextIcon className="w-5 h-5" />
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                                        {t.description || 'N/A'}
+                                                    </span>
+                                                </div>
                                             </td>
-                                            <td className="whitespace-nowrap px-6 py-4 text-right">
-                                                <span className="font-mono text-sm font-bold text-slate-900">
-                                                    {Number(transfer.amount || 0).toLocaleString()} F
-                                                </span>
+                                            <td className="px-6 py-5 text-right whitespace-nowrap">
+                                                <div className="flex flex-col items-end">
+                                                    <div className="flex items-center gap-1 text-slate-900 dark:text-white">
+                                                        <span className="text-lg font-black">{Number(t.amount || 0).toLocaleString()}</span>
+                                                        <span className="text-[10px] font-bold opacity-40">CFA</span>
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td className="whitespace-nowrap px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold capitalize ${getStatusColor(transfer.status)}`}>
-                                                    {getStatusIcon(transfer.status)}
-                                                    <span>{transfer.status || 'pending'}</span>
+                                            <td className="px-8 py-5 text-center">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${statusStyle.bg} ${statusStyle.text} text-[10px] font-black uppercase tracking-widest transition-transform group-hover:scale-105`}>
+                                                    <StatusIcon className="w-4 h-4" />
+                                                    {t.status || 'pending'}
                                                 </span>
                                             </td>
                                         </tr>

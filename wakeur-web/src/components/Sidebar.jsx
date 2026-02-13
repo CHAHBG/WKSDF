@@ -1,9 +1,20 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import {
+    XMarkIcon,
+    HomeIcon,
+    Square3Stack3DIcon,
+    ArrowsRightLeftIcon,
+    CurrencyDollarIcon,
+    ShoppingBagIcon,
+    CreditCardIcon,
+    UsersIcon,
+    ChartBarIcon,
+    ArrowLeftOnRectangleIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Sidebar({ isOpen = false, onClose = () => {} }) {
+export default function Sidebar({ isOpen = false, onClose = () => { } }) {
     const navigate = useNavigate();
     const location = useLocation();
     const { shopSettings, userProfile, signOut } = useAuth();
@@ -14,95 +25,114 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     };
 
     const shopName = shopSettings?.shop_name || 'Wakeur Sokhna';
-    const shopNameParts = shopName.split(' ');
-    const firstName = shopNameParts[0] || 'Wakeur';
-    const lastName = shopNameParts.slice(1).join(' ');
 
-    const mainMenuItems = [
-        { path: '/', label: 'Dashboard', allowedRoles: ['owner', 'agent'] },
-        { path: '/inventory', label: 'Inventaire', allowedRoles: ['owner'] },
-        { path: '/transfers', label: 'Transferts', allowedRoles: ['owner'] },
-        { path: '/mobile-money', label: 'Mobile Money', allowedRoles: ['owner', 'agent'] },
-        { path: '/sales', label: 'Ventes', allowedRoles: ['owner', 'agent'] },
-        { path: '/expenses', label: 'Dépenses', allowedRoles: ['owner'] },
+    const menuItems = [
+        { path: '/', label: 'Tableau de bord', icon: HomeIcon, allowedRoles: ['owner', 'agent'], section: 'Menu' },
+        { path: '/inventory', label: 'Inventaire', icon: Square3Stack3DIcon, allowedRoles: ['owner'], section: 'Menu' },
+        { path: '/sales', label: 'Ventes', icon: ShoppingBagIcon, allowedRoles: ['owner', 'agent'], section: 'Operations' },
+        { path: '/mobile-money', label: 'Mobile Money', icon: CreditCardIcon, allowedRoles: ['owner', 'agent'], section: 'Operations' },
+        { path: '/transfers', label: 'Transferts', icon: ArrowsRightLeftIcon, allowedRoles: ['owner'], section: 'Operations' },
+        { path: '/expenses', label: 'Dépenses', icon: CurrencyDollarIcon, allowedRoles: ['owner'], section: 'Gestion' },
+        { path: '/agents', label: 'Gestion des Agents', icon: UsersIcon, allowedRoles: ['owner'], section: 'Gestion' },
+        { path: '/transactions', label: 'Historique', icon: ChartBarIcon, allowedRoles: ['owner', 'agent'], section: 'Gestion' },
+        { path: '/reports', label: 'Analyses', icon: ChartBarIcon, allowedRoles: ['owner'], section: 'Gestion' },
     ];
 
-    const managementItems = [
-        { path: '/agents', label: 'Agents', allowedRoles: ['owner'] },
-        { path: '/transactions', label: 'Transactions', allowedRoles: ['owner', 'agent'] },
-        { path: '/reports', label: 'Rapports & Analyses', allowedRoles: ['owner'] },
-    ];
-
-    const filterItems = (items) => {
+    const filterItemsByRole = (items) => {
         if (!userProfile?.role) return [];
         return items.filter((item) => item.allowedRoles.includes(userProfile.role));
     };
 
+    const groupedItems = filterItemsByRole(menuItems).reduce((acc, item) => {
+        if (!acc[item.section]) acc[item.section] = [];
+        acc[item.section].push(item);
+        return acc;
+    }, {});
+
     const linkClass = (path) => {
         const isActive = location.pathname === path;
-        return `block rounded-xl px-4 py-3 text-base font-semibold transition-all duration-150 ${
-            isActive
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-        }`;
+        return `group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isActive
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
+            }`;
     };
 
     return (
         <>
             {isOpen && (
-                <button
-                    type="button"
-                    aria-label="Fermer le menu"
+                <div
                     onClick={onClose}
-                    className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden transition-opacity duration-300"
                 />
             )}
 
             <aside
-                className={`fixed left-0 top-0 z-50 flex h-full w-72 flex-col border-r border-slate-200 bg-white p-6 shadow-sm transition-transform duration-200 lg:translate-x-0 ${
-                    isOpen ? 'translate-x-0' : '-translate-x-full'
-                }`}
+                className={`fixed left-0 top-0 z-50 flex h-full w-72 flex-col border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 p-6 shadow-xl transition-all duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}
             >
-                <div className="mb-8 flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <h1 className="flex flex-col text-3xl font-bold leading-tight text-slate-900">
-                        {firstName}
-                        {lastName && (
-                            <span className="mt-1 text-lg font-semibold uppercase tracking-wide text-slate-500">
-                                {lastName}
-                            </span>
-                        )}
-                    </h1>
+                {/* Brand Logo Section */}
+                <div className="mb-10 flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+                            <span className="text-xl font-black tracking-tighter">W</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-lg font-bold leading-none tracking-tight text-slate-900 dark:text-white">Wakeur</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Sokhna Daba</span>
+                        </div>
+                    </div>
                     <button
-                        type="button"
                         onClick={onClose}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:text-slate-800 lg:hidden"
-                        aria-label="Fermer"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 lg:hidden"
                     >
                         <XMarkIcon className="h-5 w-5" />
                     </button>
                 </div>
 
-                <nav className="flex-1 space-y-1 overflow-y-auto pr-1 scrollbar-hide">
-                    <p className="mb-2 px-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Menu principal</p>
-                    {filterItems(mainMenuItems).map((item) => (
-                        <Link key={item.path} to={item.path} className={linkClass(item.path)} onClick={onClose}>
-                            {item.label}
-                        </Link>
-                    ))}
-
-                    <p className="mb-2 mt-8 px-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Gestion</p>
-                    {filterItems(managementItems).map((item) => (
-                        <Link key={item.path} to={item.path} className={linkClass(item.path)} onClick={onClose}>
-                            {item.label}
-                        </Link>
+                {/* Navigation Items */}
+                <nav className="flex-1 space-y-8 overflow-y-auto pr-2 scrollbar-hide">
+                    {Object.entries(groupedItems).map(([section, items]) => (
+                        <div key={section} className="space-y-2">
+                            <h3 className="px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                                {section}
+                            </h3>
+                            <div className="space-y-1">
+                                {items.map((item) => (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        className={linkClass(item.path)}
+                                        onClick={onClose}
+                                    >
+                                        <item.icon className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
+                                        {item.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
                     ))}
                 </nav>
 
-                <div className="mt-6 border-t border-slate-200 pt-5">
+                {/* Profile/Footer Section */}
+                <div className="mt-6 border-t border-slate-100 dark:border-slate-800 pt-6">
+                    <div className="mb-4 flex items-center gap-3 px-2">
+                        <div className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            {userProfile?.full_name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-bold truncate text-slate-900 dark:text-white">
+                                {userProfile?.full_name || 'Utilisateur'}
+                            </span>
+                            <span className="text-[10px] font-medium text-slate-500">
+                                {userProfile?.role === 'owner' ? 'Propriétaire' : 'Agent de vente'}
+                            </span>
+                        </div>
+                    </div>
                     <button
                         onClick={handleLogout}
-                        className="w-full rounded-xl px-4 py-3 text-left text-base font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                        className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-rose-600 transition-all duration-200 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                     >
+                        <ArrowLeftOnRectangleIcon className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-1" />
                         Déconnexion
                     </button>
                 </div>
@@ -110,4 +140,5 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         </>
     );
 }
+
 
