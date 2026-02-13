@@ -151,7 +151,8 @@
 
     /* Soft Metric Cards */
     .metric-card-joy {
-        @apply p-8 rounded-[2.5rem] border border-transparent bg-white dark:bg-zinc-900 shadow-premium transition-all duration-500;
+        @apply p-8 rounded-[2.5rem] border border-transparent bg-white dark:bg-zinc-900 transition-all duration-500;
+        box-shadow: var(--shadow-premium);
         background: linear-gradient(to bottom right, var(--bg-elev), var(--bg-soft));
     }
 
