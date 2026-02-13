@@ -91,6 +91,12 @@
     }
 }
 
+@layer utilities {
+    .shadow-premium {
+        box-shadow: var(--shadow-premium);
+    }
+}
+
 @layer components {
 
     /* Rounded & Joyful Surfaces */
