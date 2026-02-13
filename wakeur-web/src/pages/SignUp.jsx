@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import {
-    SparklesIcon,
     EnvelopeIcon,
     KeyIcon,
     ArrowRightIcon,
@@ -23,11 +22,6 @@ export default function SignUp() {
 
     const handleSignUp = async (e) => {
         e.preventDefault();
-        if (!email || !password || !confirmPassword) {
-            setError('Veuillez remplir tous les champs.');
-            return;
-        }
-
         if (password !== confirmPassword) {
             setError('Les mots de passe ne correspondent pas.');
             return;
@@ -35,21 +29,16 @@ export default function SignUp() {
 
         setLoading(true);
         setError('');
-        setSuccess('');
-
         try {
             const { error: signUpError } = await supabase.auth.signUp({
                 email: normalizeEmail(email),
                 password,
-                options: {
-                    data: { role: 'owner' },
-                },
+                options: { data: { role: 'owner' } },
             });
 
             if (signUpError) throw signUpError;
-
-            setSuccess('Compte créé ! Veuillez vérifier votre boîte de réception.');
-            setTimeout(() => navigate('/login'), 3500);
+            setSuccess('Compte créé ! Vérifiez vos emails.');
+            setTimeout(() => navigate('/login'), 3000);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -58,112 +47,76 @@ export default function SignUp() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 sm:p-12 overflow-hidden selection:bg-indigo-100 selection:text-indigo-600">
-            {/* Background Accents (Mirror Login) */}
-            <div className="fixed top-0 left-0 w-full h-full pointer-events-none opacity-20">
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500 blur-[120px] rounded-full animate-pulse-slow"></div>
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500 blur-[120px] rounded-full animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
-            </div>
-
-            <div className="w-full max-w-lg relative z-10 bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up p-12 sm:p-16">
-                <div className="text-center mb-12">
-                    <div className="h-16 w-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-8 text-indigo-600 shadow-xl shadow-indigo-600/10 ring-1 ring-indigo-100 dark:ring-indigo-900/50">
-                        <UserPlusIcon className="w-8 h-8" />
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6">
+            <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-premium p-10 sm:p-12">
+                <div className="text-center mb-10">
+                    <div className="h-12 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center mx-auto mb-6 text-zinc-900 dark:text-white">
+                        <UserPlusIcon className="w-6 h-6" />
                     </div>
-                    <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                        Lancez votre<br />
-                        <span className="text-indigo-600 dark:text-indigo-400">Entreprise.</span>
-                    </h2>
-                    <p className="mt-4 text-slate-500 font-medium">Rejoignez l&apos;écosystème Wakeur Sokhna dès aujourd&apos;hui.</p>
+                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Créer mon compte</h2>
+                    <p className="mt-2 text-zinc-500 text-sm">Commencez à gérer votre commerce avec Wakeur Sokhna.</p>
                 </div>
 
                 <form className="space-y-6" onSubmit={handleSignUp}>
-                    {error && (
-                        <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold animate-shake">
-                            {error}
-                        </div>
-                    )}
-                    {success && (
-                        <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl text-emerald-600 text-sm font-bold">
-                            {success}
+                    {(error || success) && (
+                        <div className={`p-4 rounded-lg text-xs font-bold ${error ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                            {error || success}
                         </div>
                     )}
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Email de l&apos;Administrateur</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Email Administrateur</label>
                         <div className="relative">
-                            <EnvelopeIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                            <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                             <input
                                 type="email"
                                 required
-                                className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                placeholder="votre@email.com"
+                                className="input-premium pl-11 !text-sm"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Mot de Passe Sécurisé</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Mot de Passe</label>
                         <div className="relative">
-                            <KeyIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                            <KeyIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                             <input
                                 type="password"
                                 required
-                                className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                placeholder="••••••••"
+                                className="input-premium pl-11 !text-sm"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Confirmation</label>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Confirmation</label>
                         <div className="relative">
-                            <ShieldCheckIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                            <ShieldCheckIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                             <input
                                 type="password"
                                 required
-                                className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                placeholder="Répéter le mot de passe"
+                                className="input-premium pl-11 !text-sm"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-5 bg-indigo-600 text-white rounded-[1.8rem] font-black text-lg shadow-2xl shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
-                    >
-                        {loading ? (
-                            <div className="h-6 w-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                            <>
-                                Créer mon Compte
-                                <ArrowRightIcon className="w-5 h-5" />
-                            </>
-                        )}
+                    <button type="submit" disabled={loading} className="btn-vibrant w-full !py-4 !text-sm !uppercase !tracking-[0.2em] shadow-lg">
+                        {loading ? "Création..." : "Créer mon compte"}
+                        {!loading && <ArrowRightIcon className="w-4 h-4 ml-1" />}
                     </button>
 
-                    <div className="text-center pt-8 border-t border-slate-100 dark:border-slate-800">
-                        <button
-                            type="button"
-                            onClick={() => navigate('/login')}
-                            className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors"
-                        >
-                            Déjà membre ? <span className="text-indigo-600 underline">Se connecter</span>
+                    <div className="text-center pt-8 border-t border-zinc-100 dark:border-zinc-800">
+                        <button type="button" onClick={() => navigate('/login')} className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-950 transition-colors">
+                            Déjà membre ? <span className="underline">Se connecter</span>
                         </button>
                     </div>
                 </form>
-
-                <div className="mt-12 flex items-center justify-center gap-2 opacity-50">
-                    <SparklesIcon className="w-4 h-4 text-indigo-500" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Design Premium Ness UI</span>
-                </div>
             </div>
         </div>
     );

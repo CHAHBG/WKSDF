@@ -143,30 +143,17 @@ export const AuthProvider = ({ children }) => {
             if (!profile) {
                 const { data: createdProfile, error: createProfileError } = await supabase
                     .from('users_profile')
-                    .insert({
+                    .upsert({
                         id: userId,
                         role: 'owner',
                         full_name: authUser?.user_metadata?.full_name ?? null,
                         phone_number: authUser?.phone ?? null,
-                    })
+                    }, { onConflict: 'id' })
                     .select('*')
                     .maybeSingle();
 
-                if (createProfileError) {
-                    const isDuplicateKey = createProfileError.code === '23505';
-                    if (!isDuplicateKey) throw createProfileError;
-
-                    const { data: retryProfile, error: retryError } = await supabase
-                        .from('users_profile')
-                        .select('*')
-                        .eq('id', userId)
-                        .maybeSingle();
-
-                    if (retryError) throw retryError;
-                    profile = retryProfile;
-                } else {
-                    profile = createdProfile;
-                }
+                if (createProfileError) throw createProfileError;
+                profile = createdProfile;
             }
 
             setUserProfile(profile);

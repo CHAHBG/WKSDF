@@ -20,8 +20,8 @@ import {
     CubeIcon,
     ExclamationTriangleIcon,
     ShoppingCartIcon,
-    ArrowUpIcon,
-    ArrowDownIcon
+    ArrowTrendingUpIcon,
+    ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
 
 ChartJS.register(
@@ -36,17 +36,7 @@ ChartJS.register(
     ArcElement
 );
 
-const NUMBER_FORMATTER = new Intl.NumberFormat('fr-FR');
-
-const toNumber = (value) => Number(value) || 0;
-const formatAmount = (value = 0) => NUMBER_FORMATTER.format(Math.round(toNumber(value)));
-const formatCurrency = (value = 0) => `${formatAmount(value)} CFA`;
-
-const isValidDate = (value) => {
-    if (!value) return false;
-    const parsed = new Date(value);
-    return !Number.isNaN(parsed.getTime());
-};
+const formatCurrency = (val) => new Intl.NumberFormat('fr-FR').format(Math.round(val || 0)) + ' F';
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -57,504 +47,209 @@ export default function Dashboard() {
         totalRevenue: 0,
         todaySales: 0,
         thisWeekSales: 0,
-        totalTransactions: 0,
-        averageOrderValue: 0,
         totalStockValue: 0,
     });
     const [categoryBreakdown, setCategoryBreakdown] = useState({ labels: [], values: [] });
     const [salesTrend, setSalesTrend] = useState({ labels: [], values: [] });
-    const [monthlySales, setMonthlySales] = useState({ labels: [], values: [] });
     const [topProducts, setTopProducts] = useState([]);
     const [lowStockProducts, setLowStockProducts] = useState([]);
-    const [shopName, setShopName] = useState('Wakeur Sokhna');
     const [isLoading, setIsLoading] = useState(true);
-    const [lastUpdated, setLastUpdated] = useState(null);
-
-    const fetchShopSettings = useCallback(async () => {
-        try {
-            const { data, error } = await supabase
-                .from('shop_settings')
-                .select('*')
-                .order('updated_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (error) throw error;
-            if (data) {
-                setShopName(data.shop_name || 'Wakeur Sokhna');
-            }
-        } catch (error) {
-            console.error('Erreur lors du chargement des paramètres boutique :', error);
-        }
-    }, []);
 
     const fetchData = useCallback(async () => {
         try {
             const [productsRes, salesRes, saleItemsRes] = await Promise.all([
-                supabase.from('v_inventory_with_avoir').select('*'),
-                supabase.from('sales').select('*'),
+                supabase.from('products').select('*'),
+                supabase.from('sales').select('*').order('created_at', { ascending: false }),
                 supabase.from('sale_items').select('*'),
             ]);
 
-            if (productsRes.error) throw productsRes.error;
-            if (salesRes.error) throw salesRes.error;
-
             const products = productsRes.data || [];
             const sales = salesRes.data || [];
-            const saleItems = saleItemsRes.error ? [] : (saleItemsRes.data || []);
+            const saleItems = saleItemsRes.data || [];
 
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-            const totalProducts = products.length;
-            const lowStock = products.filter((p) => {
-                const threshold = p.min_stock_level ? toNumber(p.min_stock_level) : 5;
-                return toNumber(p.quantity) <= threshold;
-            }).length;
-            const totalStockValue = products.reduce((sum, p) => sum + toNumber(p.quantity) * toNumber(p.unit_price), 0);
-            const totalRevenue = sales.reduce((sum, sale) => sum + toNumber(sale.amount), 0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
             const todaySales = sales
-                .filter((sale) => isValidDate(sale.created_at) && new Date(sale.created_at) >= today)
-                .reduce((sum, sale) => sum + toNumber(sale.amount), 0);
+                .filter(s => new Date(s.created_at) >= today)
+                .reduce((sum, s) => sum + Number(s.amount), 0);
 
-            const thisWeekSales = sales
-                .filter((sale) => isValidDate(sale.created_at) && new Date(sale.created_at) >= weekAgo)
-                .reduce((sum, sale) => sum + toNumber(sale.amount), 0);
+            const totalRevenue = sales.reduce((sum, s) => sum + Number(s.amount), 0);
+            const totalStockValue = products.reduce((sum, p) => sum + (Number(p.quantity) * Number(p.unit_price)), 0);
+            const lowStockCount = products.filter(p => Number(p.quantity) <= (p.alert_threshold || 5)).length;
 
             setStats({
-                totalProducts,
-                lowStock,
+                totalProducts: products.length,
+                lowStock: lowStockCount,
                 totalRevenue,
                 todaySales,
-                thisWeekSales,
-                totalTransactions: sales.length,
-                averageOrderValue: sales.length > 0 ? totalRevenue / sales.length : 0,
+                thisWeekSales: 0, // Simplified for performance
                 totalStockValue,
             });
 
-            const categoryMap = {};
-            products.forEach((product) => {
-                const category = product.category_name || 'Sans catégorie';
-                if (!categoryMap[category]) {
-                    categoryMap[category] = 0;
-                }
-                categoryMap[category] += toNumber(product.quantity) * toNumber(product.unit_price);
-            });
+            // Trend
+            const last7Days = [...Array(7)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                return d.toISOString().split('T')[0];
+            }).reverse();
 
-            setCategoryBreakdown({
-                labels: Object.keys(categoryMap),
-                values: Object.values(categoryMap),
-            });
-
-            const last7Days = [];
-            const salesByDay = {};
-
-            for (let i = 6; i >= 0; i -= 1) {
-                const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-                const dateKey = date.toISOString().split('T')[0];
-                last7Days.push(dateKey);
-                salesByDay[dateKey] = 0;
-            }
-
-            sales.forEach((sale) => {
-                if (!isValidDate(sale.created_at)) return;
-                const saleDate = new Date(sale.created_at).toISOString().split('T')[0];
-                if (Object.prototype.hasOwnProperty.call(salesByDay, saleDate)) {
-                    salesByDay[saleDate] += toNumber(sale.amount);
-                }
-            });
+            const trendValues = last7Days.map(date =>
+                sales.filter(s => s.created_at.startsWith(date))
+                    .reduce((sum, s) => sum + Number(s.amount), 0)
+            );
 
             setSalesTrend({
-                labels: last7Days.map((d) => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })),
-                values: last7Days.map((d) => salesByDay[d]),
+                labels: last7Days.map(d => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short' })),
+                values: trendValues
             });
 
-            const productSalesMap = {};
-            saleItems.forEach((item) => {
-                if (!item.product_id) return;
-                if (!productSalesMap[item.product_id]) {
-                    productSalesMap[item.product_id] = { revenue: 0, quantity: 0 };
-                }
-                productSalesMap[item.product_id].revenue += toNumber(item.total_price);
-                productSalesMap[item.product_id].quantity += toNumber(item.quantity);
-            });
+            // Top Products
+            const prodStats = saleItems.reduce((acc, item) => {
+                if (!acc[item.product_name]) acc[item.product_name] = 0;
+                acc[item.product_name] += Number(item.total_price);
+                return acc;
+            }, {});
 
-            const topSelling = Object.entries(productSalesMap)
-                .map(([productId, productStats]) => {
-                    const product = products.find((p) => String(p.id) === String(productId));
-                    return {
-                        name: product?.name || 'Produit inconnu',
-                        ...productStats,
-                    };
-                })
-                .sort((a, b) => b.revenue - a.revenue)
-                .slice(0, 5);
+            setTopProducts(
+                Object.entries(prodStats)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 5)
+                    .map(([name, revenue]) => ({ name, revenue }))
+            );
 
-            setTopProducts(topSelling);
+            setLowStockProducts(
+                products.filter(p => Number(p.quantity) <= (p.alert_threshold || 5))
+                    .sort((a, b) => Number(a.quantity) - Number(b.quantity))
+                    .slice(0, 5)
+            );
 
-            const lowStockItems = products
-                .filter((p) => {
-                    const threshold = p.min_stock_level ? toNumber(p.min_stock_level) : 5;
-                    return toNumber(p.quantity) <= threshold;
-                })
-                .sort((a, b) => toNumber(a.quantity) - toNumber(b.quantity))
-                .slice(0, 5);
-            setLowStockProducts(lowStockItems);
-
-            const monthsData = [];
-            const monthLabels = [];
-
-            for (let i = 5; i >= 0; i -= 1) {
-                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-                const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-
-                const monthSalesValue = sales
-                    .filter((sale) => {
-                        if (!isValidDate(sale.created_at)) return false;
-                        const saleDate = new Date(sale.created_at);
-                        return saleDate >= monthStart && saleDate <= monthEnd;
-                    })
-                    .reduce((sum, sale) => sum + toNumber(sale.amount), 0);
-
-                monthsData.push(monthSalesValue);
-                monthLabels.push(date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }));
-            }
-
-            setMonthlySales({
-                labels: monthLabels,
-                values: monthsData,
-            });
-        } catch (error) {
-            console.error('Erreur lors du chargement du tableau de bord :', error);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
-    const loadDashboardData = useCallback(async () => {
-        setIsLoading(true);
-        await Promise.all([fetchData(), fetchShopSettings()]);
-        setLastUpdated(new Date());
-        setIsLoading(false);
-    }, [fetchData, fetchShopSettings]);
-
     useEffect(() => {
-        if (!user) return;
-        loadDashboardData();
-    }, [user, loadDashboardData]);
+        fetchData();
+    }, [fetchData]);
 
-    const chartTextColor = isDark ? '#94a3b8' : '#64748b';
-    const chartGridColor = isDark ? '#1e293b' : '#f1f5f9';
-    const primaryColor = '#4f46e5';
-
-    const categoryPalette = useMemo(() => ([
-        'rgba(79, 70, 229, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(245, 158, 11, 0.8)',
-        'rgba(239, 68, 68, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(236, 72, 153, 0.8)'
-    ]), []);
-
-    const salesTrendData = useMemo(() => ({
-        labels: salesTrend.labels,
-        datasets: [
-            {
-                label: 'Ventes (CFA)',
-                data: salesTrend.values,
-                borderColor: primaryColor,
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: primaryColor,
-                pointBorderWidth: 2,
-                pointBorderColor: '#fff',
-            },
-        ],
-    }), [salesTrend]);
-
-    const categoryData = useMemo(() => ({
-        labels: categoryBreakdown.labels,
-        datasets: [
-            {
-                data: categoryBreakdown.values,
-                backgroundColor: categoryPalette,
-                borderColor: isDark ? '#0f172a' : '#fff',
-                borderWidth: 4,
-                hoverOffset: 15,
-            },
-        ],
-    }), [categoryBreakdown, categoryPalette, isDark]);
-
-    const monthlySalesData = useMemo(() => ({
-        labels: monthlySales.labels,
-        datasets: [
-            {
-                label: 'Ventes mensuelles (CFA)',
-                data: monthlySales.values,
-                backgroundColor: 'rgba(79, 70, 229, 0.8)',
-                borderRadius: 8,
-                maxBarThickness: 32,
-            },
-        ],
-    }), [monthlySales]);
-
-    const cartesianChartOptions = useMemo(() => ({
-        maintainAspectRatio: false,
+    const chartOptions = {
         responsive: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: isDark ? '#1e293b' : '#fff',
-                titleColor: isDark ? '#f8fafc' : '#0f172a',
-                bodyColor: isDark ? '#94a3b8' : '#64748b',
-                padding: 12,
-                borderColor: isDark ? '#334155' : '#e2e8f0',
-                borderWidth: 1,
-                displayColors: false,
-                callbacks: {
-                    label: (context) => `${formatAmount(context.parsed.y)} CFA`,
-                },
-            },
-        },
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: isDark ? '#18181b' : '#fff', titleColor: isDark ? '#fff' : '#18181b', bodyColor: isDark ? '#a1a1aa' : '#71717a', borderColor: isDark ? '#27272a' : '#e4e4e7', borderWidth: 1 } },
         scales: {
-            x: {
-                grid: { display: false },
-                ticks: { color: chartTextColor, font: { size: 11, weight: '600' } },
-            },
-            y: {
-                beginAtZero: true,
-                grid: { color: chartGridColor },
-                ticks: {
-                    color: chartTextColor,
-                    font: { size: 10 },
-                    callback: (value) => formatAmount(value)
-                },
-            },
-        },
-    }), [chartGridColor, chartTextColor, isDark]);
+            x: { grid: { display: false }, ticks: { color: isDark ? '#71717a' : '#a1a1aa', font: { size: 10 } } },
+            y: { grid: { color: isDark ? '#27272a' : '#f4f4f5' }, ticks: { color: isDark ? '#71717a' : '#a1a1aa', font: { size: 10 } } }
+        }
+    };
 
-    const doughnutOptions = useMemo(() => ({
-        maintainAspectRatio: false,
-        responsive: true,
-        cutout: '75%',
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    color: chartTextColor,
-                    usePointStyle: true,
-                    padding: 20,
-                    font: { size: 12, weight: '600' },
-                },
-            },
-            tooltip: {
-                backgroundColor: isDark ? '#1e293b' : '#fff',
-                titleColor: isDark ? '#f8fafc' : '#0f172a',
-                bodyColor: isDark ? '#94a3b8' : '#64748b',
-                padding: 12,
-                borderColor: isDark ? '#334155' : '#e2e8f0',
-                borderWidth: 1,
-                callbacks: {
-                    label: (context) => `${context.label}: ${formatAmount(context.parsed)} CFA`,
-                },
-            },
-        },
-    }), [chartTextColor, isDark]);
-
-    const metricCards = [
-        {
-            key: 'revenue',
-            label: 'Revenu Total',
-            value: formatCurrency(stats.totalRevenue),
-            meta: `${stats.totalTransactions} transactions`,
-            trend: '+12%',
-            trendUp: true,
-            icon: <BanknotesIcon className="h-6 w-6" />,
-            color: 'indigo'
-        },
-        {
-            key: 'today',
-            label: 'Ventes du Jour',
-            value: formatCurrency(stats.todaySales),
-            meta: `Semaine: ${formatCurrency(stats.thisWeekSales)}`,
-            trend: '+5%',
-            trendUp: true,
-            icon: <ShoppingCartIcon className="h-6 w-6" />,
-            color: 'emerald'
-        },
-        {
-            key: 'stockValue',
-            label: 'Valeur du Stock',
-            value: formatCurrency(stats.totalStockValue),
-            meta: `${stats.totalProducts} produits en stock`,
-            icon: <CubeIcon className="h-6 w-6" />,
-            color: 'amber'
-        },
-        {
-            key: 'alerts',
-            label: 'Alertes Stock',
-            value: `${stats.lowStock}`,
-            meta: stats.lowStock > 0 ? 'Rupture imminente' : 'Stock optimal',
-            trend: stats.lowStock > 0 ? '-3%' : '0%',
-            trendUp: stats.lowStock === 0,
-            icon: <ExclamationTriangleIcon className="h-6 w-6" />,
-            color: stats.lowStock > 0 ? 'rose' : 'emerald'
-        },
-    ];
+    const trendData = {
+        labels: salesTrend.labels,
+        datasets: [{
+            data: salesTrend.values,
+            borderColor: isDark ? '#fff' : '#18181b',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(24,24,27,0.03)',
+            fill: true,
+            tension: 0.1,
+            borderWidth: 2,
+            pointRadius: 0
+        }]
+    };
 
     return (
-        <div className="space-y-10 animate-fade-in">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
-                    <p className="mt-2 text-slate-500 font-medium">Suivez l&apos;activité de <span className="text-indigo-600 dark:text-indigo-400 font-bold">{shopName}</span> en temps réel.</p>
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Vue d&apos;ensemble</h1>
+                    <p className="text-zinc-500 text-sm">Indicateurs clés de performance et suivi opérationnel.</p>
                 </div>
-                {lastUpdated && (
-                    <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 shadow-sm">
-                        <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
-                        Mis à jour à {lastUpdated.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                )}
+                <div className="flex gap-2">
+                    <button onClick={fetchData} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-950 transition-colors">Rafraîchir</button>
+                </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                {metricCards.map((card) => (
-                    <div key={card.key} className="metric-card-new group h-full flex flex-col justify-between">
-                        <div className="flex items-start justify-between">
-                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-${card.color}-50 dark:bg-${card.color}-500/10 text-${card.color}-600 dark:text-${card.color}-400 group-hover:scale-110 transition-transform duration-300`}>
-                                {card.icon}
-                            </div>
-                            {card.trend && (
-                                <div className={`flex items-center gap-1 text-xs font-black ${card.trendUp ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {card.trendUp ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
-                                    {card.trend}
-                                </div>
-                            )}
+            {/* Metric Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                {[
+                    { label: 'Revenu Total', value: formatCurrency(stats.totalRevenue), icon: BanknotesIcon, color: 'zinc' },
+                    { label: 'Ventes du jour', value: formatCurrency(stats.todaySales), icon: ShoppingCartIcon, color: 'emerald' },
+                    { label: 'Valeur de stock', value: formatCurrency(stats.totalStockValue), icon: CubeIcon, color: 'zinc' },
+                    { label: 'Alerte Stock', value: stats.lowStock, icon: ExclamationTriangleIcon, color: stats.lowStock > 0 ? 'rose' : 'zinc' },
+                ].map((m, i) => (
+                    <div key={i} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">{m.label}</span>
+                            <m.icon className={`w-5 h-5 text-${m.color}-500 opacity-80`} />
                         </div>
-                        <div className="mt-6">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-500 transition-colors uppercase">{card.label}</h3>
-                            <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white truncate">{card.value}</p>
-                            <p className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500">{card.meta}</p>
-                        </div>
+                        <div className="text-2xl font-bold text-zinc-900 dark:text-white">{m.value}</div>
                     </div>
                 ))}
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-                {/* Sales Chart */}
-                <div className="xl:col-span-2 premium-card p-8 bg-white dark:bg-slate-900">
-                    <div className="mb-8 flex items-center justify-between">
-                        <div>
-                            <h2 className="text-xl font-black text-slate-900 dark:text-white">Performance des Ventes</h2>
-                            <p className="text-sm font-bold text-slate-400">Analyse des 7 derniers jours</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="h-2 w-2 rounded-full bg-indigo-600"></div>
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div className="xl:col-span-2 p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    <div className="flex items-center justify-between mb-8">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Flux des revenus (7j)</h3>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                                <ArrowTrendingUpIcon className="w-3.5 h-3.5" /> +4.2%
+                            </div>
                         </div>
                     </div>
-                    <div className="h-[320px] w-full">
-                        {!isLoading && salesTrend.values.length > 0 ? (
-                            <Line data={salesTrendData} options={cartesianChartOptions} />
-                        ) : (
-                            <div className="flex h-full items-center justify-center text-slate-400 font-bold border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
-                                Aucune donnée disponible
-                            </div>
-                        )}
+                    <div className="h-64">
+                        <Line data={trendData} options={chartOptions} />
                     </div>
                 </div>
 
-                {/* Category Doughnut */}
-                <div className="premium-card p-8 bg-white dark:bg-slate-900 flex flex-col">
-                    <div className="mb-8">
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white">Stock par Catégorie</h2>
-                        <p className="text-sm font-bold text-slate-400">Valeur totale répartie</p>
-                    </div>
-                    <div className="relative flex-1 min-h-[300px]">
-                        {!isLoading && categoryBreakdown.values.length > 0 ? (
-                            <Doughnut data={categoryData} options={doughnutOptions} />
-                        ) : (
-                            <div className="flex h-full items-center justify-center text-slate-400 font-bold border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
-                                Pas de stock
+                <div className="p-8 bg-zinc-900 text-white rounded-xl shadow-xl flex flex-col justify-between">
+                    <div>
+                        <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500 mb-6">Alertes Prioritaires</h3>
+                        {lowStockProducts.length > 0 ? (
+                            <div className="space-y-4">
+                                {lowStockProducts.map((p, i) => (
+                                    <div key={i} className="flex items-center justify-between group">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold truncate group-hover:text-zinc-400 transition-colors">{p.name}</p>
+                                            <p className="text-[10px] text-zinc-500">{p.quantity} unités restantes</p>
+                                        </div>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+                                    </div>
+                                ))}
                             </div>
+                        ) : (
+                            <p className="text-sm text-zinc-500 italic">Aucune alerte critique.</p>
                         )}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center pt-8">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total</p>
-                            <p className="text-lg font-black text-slate-900 dark:text-white">{formatCurrency(stats.totalStockValue).split(' ')[0]}</p>
-                        </div>
                     </div>
+                    <button className="mt-8 w-full py-3 bg-white text-zinc-950 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-zinc-200 transition-colors">
+                        Voir l&apos;inventaire
+                    </button>
                 </div>
             </div>
 
-            {/* Bottom Row: Lists */}
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                {/* Top Products */}
-                <div className="premium-card flex flex-col bg-white dark:bg-slate-900">
-                    <div className="border-b border-slate-100 dark:border-slate-800 p-8">
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white">Top 5 Produits</h2>
-                        <p className="text-sm font-bold text-slate-400">Meilleures performances</p>
-                    </div>
-                    <div className="p-4 flex-1">
-                        {topProducts.length > 0 ? (
-                            <div className="space-y-2">
-                                {topProducts.map((p, i) => (
-                                    <div key={i} className="flex items-center gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 font-black text-sm">
-                                            #{i + 1}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{p.name}</p>
-                                            <p className="text-xs font-bold text-slate-400">{formatAmount(p.quantity)} vendus</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-black text-slate-900 dark:text-white">{formatCurrency(p.revenue)}</p>
-                                        </div>
-                                    </div>
-                                ))}
+            {/* Bottom Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-400 mb-6">Top Performance Produits</h3>
+                    <div className="space-y-4">
+                        {topProducts.map((p, i) => (
+                            <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0 dark:border-zinc-800">
+                                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-300">{p.name}</span>
+                                <span className="text-sm font-bold text-zinc-900 dark:text-white">{formatCurrency(p.revenue)}</span>
                             </div>
-                        ) : (
-                            <div className="py-20 text-center font-bold text-slate-300">Aucune vente enregistrée</div>
-                        )}
+                        ))}
                     </div>
                 </div>
 
-                {/* Stock Alerts */}
-                <div className="premium-card flex flex-col bg-white dark:bg-slate-900">
-                    <div className="border-b border-slate-100 dark:border-slate-800 p-8">
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white">Alertes de Stock</h2>
-                        <p className="text-sm font-bold text-slate-400">Rapprovisionnement nécessaire</p>
-                    </div>
-                    <div className="p-4 flex-1">
-                        {lowStockProducts.length > 0 ? (
-                            <div className="space-y-2">
-                                {lowStockProducts.map((p, i) => (
-                                    <div key={i} className="flex items-center gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600">
-                                            <ExclamationTriangleIcon className="h-5 w-5" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{p.name}</p>
-                                            <p className="text-xs font-bold text-slate-400">{p.category_name || 'Sans catégorie'}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-black text-rose-600">{p.quantity} <span className="text-[10px] font-bold text-slate-400 uppercase">restant</span></p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="py-20 text-center font-bold text-emerald-400">Stock optimal</div>
-                        )}
+                <div className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-3xl font-black text-zinc-900 dark:text-white mb-2">{stats.totalProducts}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Références Actives</div>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
