@@ -27,7 +27,23 @@ const verifyToken = async (req, res, next) => {
             throw new Error('Invalid token');
         }
 
-        req.user = user;
+        // Fetch user profile to get shop_id
+        const { data: profile, error: profileError } = await supabase
+            .from('users_profile')
+            .select('shop_id, role')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error fetching user profile:', profileError);
+        }
+
+        req.user = {
+            ...user,
+            shop_id: profile?.shop_id || null,
+            role: profile?.role || null
+        };
+
         next();
     } catch (error) {
         console.error('Token verification error:', error.message);

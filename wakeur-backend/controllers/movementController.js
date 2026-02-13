@@ -2,9 +2,16 @@ const supabase = require('../config/supabaseClient');
 
 exports.getAllMovements = async (req, res) => {
     try {
+        const shop_id = req.user ? req.user.shop_id : null;
+
+        if (!shop_id) {
+            return res.json([]);
+        }
+
         const { data, error } = await supabase
             .from('v_movements_detailed')
             .select('*')
+            .eq('shop_id', shop_id)
             .order('movement_date', { ascending: false });
 
         if (error) throw error;
@@ -17,7 +24,25 @@ exports.getAllMovements = async (req, res) => {
 exports.createMovement = async (req, res) => {
     try {
         const { product_id, movement_type, quantity, unit_price, comment } = req.body;
-        const user_id = req.user ? req.user.id : null; // Assuming auth middleware populates req.user
+        const user_id = req.user ? req.user.id : null;
+        const shop_id = req.user ? req.user.shop_id : null;
+
+        if (!shop_id) {
+            return res.status(400).json({ error: 'User does not belong to a shop' });
+        }
+
+        // Verify product belongs to shop
+        const { data: productData, error: productError } = await supabase
+            .from('products')
+            .select('quantity, shop_id')
+            .eq('id', product_id)
+            .single();
+
+        if (productError) throw productError;
+
+        if (productData.shop_id !== shop_id) {
+            return res.status(403).json({ error: 'Product does not belong to your shop' });
+        }
 
         // 1. Record the movement
         const { data: movementData, error: movementError } = await supabase
@@ -29,7 +54,8 @@ exports.createMovement = async (req, res) => {
                 unit_price,
                 total_amount: quantity * (unit_price || 0),
                 comment,
-                created_by: user_id // This might need adjustment based on how users are stored (auth.users vs public.users)
+                created_by: user_id,
+                shop_id
             }])
             .select();
 
@@ -38,15 +64,6 @@ exports.createMovement = async (req, res) => {
         // 2. Update product quantity (Application-side logic)
         // Note: Ideally this should be a database trigger or a stored procedure to ensure atomicity.
         // For now, we do it here.
-
-        // Get current product quantity
-        const { data: productData, error: productError } = await supabase
-            .from('products')
-            .select('quantity')
-            .eq('id', product_id)
-            .single();
-
-        if (productError) throw productError;
 
         let newQuantity = productData.quantity;
         if (movement_type === 'Entrée') {

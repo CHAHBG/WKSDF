@@ -2,10 +2,21 @@ const supabase = require('../config/supabaseClient');
 
 exports.getAllProducts = async (req, res) => {
     try {
+        const shop_id = req.user ? req.user.shop_id : null;
+
+        if (!shop_id) {
+            // If no shop_id (e.g. public access or misconfigured user), return empty or handle accordingly
+            // For now, let's return an empty array to be safe
+            return res.json([]);
+        }
+
         // Use the view that joins with categories
-        const { data, error } = await supabase
+        let query = supabase
             .from('v_products_with_category')
-            .select('*');
+            .select('*')
+            .eq('shop_id', shop_id);
+
+        const { data, error } = await query;
 
         if (error) throw error;
         res.json(data);
@@ -18,6 +29,11 @@ exports.createProduct = async (req, res) => {
     try {
         const { name, category_id, unit_price, quantity, alert_threshold, sku, description, image_url } = req.body;
         const user_id = req.user ? req.user.id : null;
+        const shop_id = req.user ? req.user.shop_id : null;
+
+        if (!shop_id) {
+            return res.status(400).json({ error: 'User does not belong to a shop' });
+        }
 
         const { data, error } = await supabase
             .from('products')
@@ -30,7 +46,8 @@ exports.createProduct = async (req, res) => {
                 sku,
                 description,
                 image_url,
-                created_by: user_id
+                created_by: user_id,
+                shop_id
             }])
             .select();
 
