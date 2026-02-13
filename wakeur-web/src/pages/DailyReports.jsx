@@ -110,47 +110,51 @@ export default function DailyReports() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-12 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Clôtures Journalières</h1>
-                    <p className="mt-1 text-zinc-500 text-sm">Contrôle des balances et inventaire physique de fin de session.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Clôtures Journalières</h1>
+                    <p className="text-zinc-500 font-medium mt-1">Contrôle des balances et inventaire physique de fin de session.</p>
                 </div>
-                <button onClick={() => setShowModal(true)} className="btn-vibrant !text-xs !uppercase !tracking-widest">
-                    <PlusIcon className="w-4 h-4" /> Nouvelle Clôture
+                <button onClick={() => setShowModal(true)} className="btn-vibrant">
+                    <PlusIcon className="w-5 h-5" /> Nouvelle Clôture
                 </button>
             </div>
 
-            <div className="table-container">
-                <table className="w-full text-left text-sm">
+            <div className="table-container shadow-2xl shadow-teal-900/5">
+                <table className="w-full text-left">
                     <thead>
                         <tr className="table-header">
-                            <th className="px-6 py-4">Date</th>
-                            <th className="px-6 py-4">Agent</th>
-                            <th className="px-6 py-4 text-right">Espèces</th>
-                            <th className="px-6 py-4 text-right">Total Global</th>
-                            <th className="px-6 py-4 text-center">Actions</th>
+                            <th className="px-8 py-6">Date</th>
+                            <th className="px-6 py-6">Agent</th>
+                            <th className="px-6 py-6 text-right">Espèces</th>
+                            <th className="px-6 py-6 text-right">Total Global</th>
+                            <th className="px-8 py-6 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                         {loading ? (
-                            <tr><td colSpan="5" className="px-6 py-12 text-center text-zinc-400 italic">Chargement...</td></tr>
+                            <tr><td colSpan="5" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Analyse des rapports...</td></tr>
                         ) : reports.length === 0 ? (
-                            <tr><td colSpan="5" className="px-6 py-12 text-center text-zinc-400 italic">Aucune clôture enregistrée.</td></tr>
+                            <tr><td colSpan="5" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Aucune clôture enregistrée.</td></tr>
                         ) : (
                             reports.map((r) => (
-                                <tr key={r.id} className="table-row">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-zinc-500 text-xs">
-                                            <CalendarIcon className="w-3.5 h-3.5" />
-                                            <span>{new Date(r.report_date).toLocaleDateString('fr-FR')}</span>
+                                <tr key={r.id} className="table-row group">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-2 text-zinc-500 font-bold text-xs">
+                                            <CalendarIcon className="w-4 h-4 text-teal-600/50" />
+                                            <span>{new Date(r.report_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-zinc-900 dark:text-zinc-200 text-[10px] uppercase tracking-widest">{r.agents?.name}</td>
-                                    <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-white">{formatCurrency(r.physical_cash)}</td>
-                                    <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-white">{formatCurrency(r.theoretical_cash)}</td>
-                                    <td className="px-6 py-4 text-center">
-                                        <button onClick={() => setSelectedReport(r)} className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                                    <td className="px-6 py-6">
+                                        <span className="px-3 py-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg text-[10px] font-black uppercase tracking-widest text-zinc-400 border border-transparent group-hover:border-teal-500/20 transition-all">
+                                            {r.agents?.name}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-6 text-right font-black text-zinc-900 dark:text-white">{formatCurrency(r.physical_cash)}</td>
+                                    <td className="px-6 py-6 text-right font-black text-teal-600 dark:text-teal-400">{formatCurrency(r.theoretical_cash)}</td>
+                                    <td className="px-8 py-6 text-center">
+                                        <button onClick={() => setSelectedReport(r)} className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 hover:scale-110 transition-transform">
                                             <EyeIcon className="w-4 h-4" />
                                         </button>
                                     </td>

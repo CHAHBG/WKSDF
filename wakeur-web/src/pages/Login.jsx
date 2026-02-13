@@ -61,71 +61,70 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6 sm:p-12">
-            <div className="w-full max-w-5xl flex flex-col lg:flex-row bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-premium">
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6 sm:p-12 animate-fade-in">
+            <div className="w-full max-w-5xl flex flex-col lg:flex-row bg-white dark:bg-zinc-900 rounded-[3rem] overflow-hidden shadow-2xl shadow-teal-900/10 border border-zinc-200/50 dark:border-zinc-800/50">
 
-                {/* Visual Side - Dark & Solid */}
-                <div className="lg:w-5/12 p-12 lg:p-16 bg-zinc-900 flex flex-col justify-between text-white">
-                    <div>
-                        <div className="h-10 w-10 bg-white text-zinc-950 rounded-lg flex items-center justify-center mb-10">
-                            <span className="font-bold">W</span>
+                {/* Visual Side - Matte Joyful */}
+                <div className="lg:w-5/12 p-16 lg:p-20 bg-zinc-950 flex flex-col justify-between text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/10 rounded-full -mr-40 -mt-40 blur-3xl"></div>
+                    <div className="relative z-10">
+                        <div className="h-16 w-16 bg-white text-zinc-950 rounded-2xl flex items-center justify-center mb-12 shadow-xl shadow-white/5">
+                            <span className="text-2xl font-black tracking-tighter">W</span>
                         </div>
-                        <h1 className="text-3xl font-bold leading-tight">
-                            Wakeur Sokhna.
-                            <br />
-                            <span className="text-zinc-500 font-medium text-lg">Système de Gestion</span>
+                        <h1 className="text-5xl font-black tracking-tighter leading-tight">
+                            Wakeur <span className="text-teal-400">Sokhna</span>.
                         </h1>
-                        <p className="mt-6 text-zinc-400 text-sm leading-relaxed max-w-xs">
-                            Accédez à votre espace sécurisé pour gérer vos opérations, stocks et rapports en temps réel.
+                        <p className="mt-8 text-zinc-400 font-medium text-lg leading-relaxed max-w-xs">
+                            Votre écosystème intelligent pour la gestion de point de vente et mobile money.
                         </p>
                     </div>
 
-                    <div className="space-y-4 opacity-50">
-                        <div className="flex items-center gap-3">
-                            <ShieldCheckIcon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Opérations Sécurisées</span>
+                    <div className="relative z-10 space-y-6">
+                        <div className="flex items-center gap-4 text-zinc-500 font-black text-[10px] uppercase tracking-[0.3em]">
+                            <ShieldCheckIcon className="w-5 h-5 text-teal-500" />
+                            <span>Opérations Sécurisées</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Form Side */}
-                <div className="lg:w-7/12 p-12 lg:p-16">
+                <div className="lg:w-7/12 p-16 lg:p-20">
                     <div className="max-w-md mx-auto">
-                        <div className="flex items-center justify-between mb-10">
-                            <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Connexion</h2>
-                            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+                        <div className="flex items-center justify-between mb-12">
+                            <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Connexion</h2>
+                            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-2xl">
                                 <button
                                     onClick={() => setIsAgentLogin(false)}
-                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${!isAgentLogin ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+                                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isAgentLogin ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-premium' : 'text-zinc-500 hover:text-zinc-700'}`}
                                 >
                                     Admin
                                 </button>
                                 <button
                                     onClick={() => setIsAgentLogin(true)}
-                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${isAgentLogin ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+                                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isAgentLogin ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-premium' : 'text-zinc-500 hover:text-zinc-700'}`}
                                 >
                                     Agent
                                 </button>
                             </div>
                         </div>
 
-                        <form onSubmit={handleLogin} className="space-y-6">
+                        <form onSubmit={handleLogin} className="space-y-8">
                             {(error || info) && (
-                                <div className={`p-4 rounded-lg text-xs font-bold ${error ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                <div className={`p-5 rounded-2xl text-xs font-black uppercase tracking-widest border animate-shake ${error ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
                                     {error || info}
                                 </div>
                             )}
 
                             {!isAgentLogin ? (
                                 <>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Email</label>
-                                        <div className="relative">
-                                            <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Identifiant Email</label>
+                                        <div className="relative group">
+                                            <EnvelopeIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
                                             <input
                                                 type="email"
                                                 required
-                                                className="input-premium pl-11 !text-sm"
+                                                className="input-premium pl-14 h-14"
                                                 placeholder="votre@email.com"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
@@ -133,14 +132,14 @@ export default function Login() {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Mot de Passe</label>
-                                        <div className="relative">
-                                            <KeyIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Mot de Passe</label>
+                                        <div className="relative group">
+                                            <KeyIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
                                             <input
                                                 type={showPassword ? 'text' : 'password'}
                                                 required
-                                                className="input-premium pl-11 pr-12 !text-sm"
+                                                className="input-premium pl-14 pr-16 h-14"
                                                 placeholder="••••••••"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
@@ -148,7 +147,7 @@ export default function Login() {
                                             <button
                                                 type="button"
                                                 onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-zinc-400 hover:text-zinc-600"
+                                                className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-teal-600 transition-colors"
                                             >
                                                 {showPassword ? 'Cacher' : 'Voir'}
                                             </button>
@@ -157,27 +156,27 @@ export default function Login() {
                                 </>
                             ) : (
                                 <>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Téléphone Agent</label>
-                                        <div className="relative">
-                                            <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Téléphone Agent</label>
+                                        <div className="relative group">
+                                            <PhoneIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
                                             <input
                                                 type="tel"
                                                 required
-                                                className="input-premium pl-11 !text-sm"
+                                                className="input-premium pl-14 h-14"
                                                 placeholder="77 000 00 00"
                                                 value={phone}
                                                 onChange={(e) => setPhone(e.target.value)}
                                             />
                                         </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Code PIN</label>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Code PIN Sécurisé</label>
                                         <input
                                             type="password"
                                             required
                                             maxLength={4}
-                                            className="input-premium text-center tracking-[0.5em] !text-lg font-bold"
+                                            className="input-premium text-center tracking-[0.8em] !text-2xl font-black h-16"
                                             placeholder="••••"
                                             value={code}
                                             onChange={(e) => setCode(e.target.value)}
@@ -189,20 +188,20 @@ export default function Login() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="btn-vibrant w-full !py-4 !text-sm !uppercase !tracking-[0.2em] shadow-lg"
+                                className="btn-vibrant w-full h-16 !text-sm !uppercase !tracking-[0.2em]"
                             >
-                                {loading ? "Connexion..." : "Se connecter"}
-                                {!loading && <ArrowRightIcon className="w-4 h-4 ml-1" />}
+                                {loading ? "Authentification..." : "Accéder à l'espace"}
+                                {!loading && <ArrowRightIcon className="w-5 h-5 ml-2" />}
                             </button>
 
-                            <div className="pt-4 flex flex-col gap-3">
+                            <div className="pt-6 flex flex-col items-center">
                                 {!isAgentLogin && (
                                     <button
                                         type="button"
                                         onClick={() => navigate('/signup')}
-                                        className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-950 transition-colors"
+                                        className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-teal-600 transition-colors"
                                     >
-                                        Créer mon commerce
+                                        Ouvrir mon compte commerce
                                     </button>
                                 )}
                             </div>

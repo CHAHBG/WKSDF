@@ -50,60 +50,73 @@ export default function AgentManagement() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-12 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Gestion des Agents</h1>
-                    <p className="mt-1 text-zinc-500 text-sm">Registre et droits d&apos;accès de vos collaborateurs.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Gestion des Collaborateurs</h1>
+                    <p className="text-zinc-500 font-medium mt-1">Registre et droits d&apos;accès de vos agents de confiance.</p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="btn-vibrant !text-xs !uppercase !tracking-widest">
-                    <UserPlusIcon className="w-4 h-4" /> Ajouter un Agent
+                <button onClick={() => setIsModalOpen(true)} className="btn-vibrant">
+                    <UserPlusIcon className="w-5 h-5" /> Ajouter un Agent
                 </button>
             </div>
 
-            <div className="table-container">
-                <table className="w-full text-left text-sm">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="metric-card-joy">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 mb-6 font-black border border-teal-100 dark:border-teal-800">
+                        <UserGroupIcon className="w-6 h-6" />
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 mb-1">Total Agents</p>
+                    <p className="text-4xl font-black text-zinc-900 dark:text-white tracking-tighter">{agents.length}</p>
+                </div>
+            </div>
+
+            <div className="table-container shadow-2xl shadow-teal-900/5">
+                <table className="w-full text-left">
                     <thead>
                         <tr className="table-header">
-                            <th className="px-6 py-4">Agent</th>
-                            <th className="px-6 py-4">Contact</th>
-                            <th className="px-6 py-4 text-center">Code PIN</th>
-                            <th className="px-6 py-4 text-center">Statut</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
+                            <th className="px-8 py-6">Agent</th>
+                            <th className="px-6 py-6">Contact</th>
+                            <th className="px-6 py-6 text-center">Code PIN</th>
+                            <th className="px-6 py-6 text-center">Statut</th>
+                            <th className="px-8 py-6 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                         {loading ? (
-                            <tr><td colSpan="5" className="px-6 py-12 text-center text-zinc-400 italic">Chargement...</td></tr>
+                            <tr><td colSpan="5" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Chargement des collaborateurs...</td></tr>
                         ) : agents.length === 0 ? (
-                            <tr><td colSpan="5" className="px-6 py-12 text-center text-zinc-400 italic">Aucun agent enregistré.</td></tr>
+                            <tr><td colSpan="5" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Aucun agent pour le moment.</td></tr>
                         ) : (
                             agents.map((agent) => (
-                                <tr key={agent.id} className="table-row">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 font-bold text-xs uppercase">
+                                <tr key={agent.id} className="table-row group">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-xl bg-teal-50 dark:bg-zinc-800 flex items-center justify-center text-teal-600 font-black border border-teal-100 dark:border-zinc-700 group-hover:rotate-3 transition-transform">
                                                 {agent.name?.charAt(0)}
                                             </div>
-                                            <span className="font-semibold text-zinc-900 dark:text-zinc-200">{agent.name}</span>
+                                            <span className="font-black text-zinc-900 dark:text-white tracking-tight">{agent.name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-zinc-500">
-                                            <PhoneIcon className="w-3.5 h-3.5" />
+                                    <td className="px-6 py-6">
+                                        <div className="flex items-center gap-2 text-zinc-500 font-bold text-xs">
+                                            <PhoneIcon className="w-4 h-4 text-teal-600/50" />
                                             <span>{agent.phone || 'N/A'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="font-mono font-bold tracking-widest text-zinc-900 dark:text-white">{agent.code}</span>
+                                    <td className="px-6 py-6 text-center">
+                                        <span className="px-3 py-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg font-mono font-black tracking-[0.2em] text-zinc-900 dark:text-white text-sm">
+                                            {agent.code}
+                                        </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center gap-1.5 text-emerald-600 font-bold text-[10px] uppercase tracking-widest">
+                                    <td className="px-6 py-6 text-center">
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-800">
                                             <ShieldCheckIcon className="w-3.5 h-3.5" /> Actif
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button onClick={() => handleDelete(agent.id)} className="p-1.5 text-zinc-400 hover:text-rose-600 transition-colors">
+                                    <td className="px-8 py-6 text-right">
+                                        <button onClick={() => handleDelete(agent.id)} className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 hover:scale-110 transition-transform">
                                             <TrashIcon className="w-4 h-4" />
                                         </button>
                                     </td>

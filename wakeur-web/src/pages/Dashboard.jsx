@@ -21,7 +21,8 @@ import {
     ExclamationTriangleIcon,
     ShoppingCartIcon,
     ArrowTrendingUpIcon,
-    ArrowTrendingDownIcon
+    ArrowTrendingDownIcon,
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 ChartJS.register(
@@ -138,10 +139,22 @@ export default function Dashboard() {
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: isDark ? '#18181b' : '#fff', titleColor: isDark ? '#fff' : '#18181b', bodyColor: isDark ? '#a1a1aa' : '#71717a', borderColor: isDark ? '#27272a' : '#e4e4e7', borderWidth: 1 } },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: isDark ? '#161b22' : '#fff',
+                titleColor: isDark ? '#f0f6fc' : '#0f172a',
+                bodyColor: isDark ? '#8b949e' : '#64748b',
+                borderColor: isDark ? '#30363d' : '#e2e8e8',
+                borderWidth: 1,
+                padding: 12,
+                cornerRadius: 12,
+                titleFont: { weight: 'bold' }
+            }
+        },
         scales: {
-            x: { grid: { display: false }, ticks: { color: isDark ? '#71717a' : '#a1a1aa', font: { size: 10 } } },
-            y: { grid: { color: isDark ? '#27272a' : '#f4f4f5' }, ticks: { color: isDark ? '#71717a' : '#a1a1aa', font: { size: 10 } } }
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } } },
+            y: { grid: { color: isDark ? '#30363d' : '#f0f9f9', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } } }
         }
     };
 
@@ -149,104 +162,145 @@ export default function Dashboard() {
         labels: salesTrend.labels,
         datasets: [{
             data: salesTrend.values,
-            borderColor: isDark ? '#fff' : '#18181b',
-            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(24,24,27,0.03)',
+            borderColor: '#0d9488',
+            backgroundColor: 'rgba(13, 148, 136, 0.05)',
             fill: true,
-            tension: 0.1,
-            borderWidth: 2,
-            pointRadius: 0
+            tension: 0.4,
+            borderWidth: 3,
+            pointRadius: 4,
+            pointBackgroundColor: '#0d9488',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointHoverRadius: 6
         }]
     };
 
     return (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
+        <div className="space-y-12 animate-fade-in">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Vue d&apos;ensemble</h1>
-                    <p className="text-zinc-500 text-sm">Indicateurs clés de performance et suivi opérationnel.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Vue d&apos;ensemble</h1>
+                    <p className="text-zinc-500 font-medium mt-1">Gérez votre activité avec une touche de sérénité.</p>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={fetchData} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-950 transition-colors">Rafraîchir</button>
-                </div>
+                <button
+                    onClick={fetchData}
+                    className="btn-ghost"
+                >
+                    <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    Actualiser
+                </button>
             </div>
 
             {/* Metric Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
                 {[
-                    { label: 'Revenu Total', value: formatCurrency(stats.totalRevenue), icon: BanknotesIcon, color: 'zinc' },
+                    { label: 'Revenu Total', value: formatCurrency(stats.totalRevenue), icon: BanknotesIcon, color: 'teal' },
                     { label: 'Ventes du jour', value: formatCurrency(stats.todaySales), icon: ShoppingCartIcon, color: 'emerald' },
-                    { label: 'Valeur de stock', value: formatCurrency(stats.totalStockValue), icon: CubeIcon, color: 'zinc' },
-                    { label: 'Alerte Stock', value: stats.lowStock, icon: ExclamationTriangleIcon, color: stats.lowStock > 0 ? 'rose' : 'zinc' },
+                    { label: 'Valeur de stock', value: formatCurrency(stats.totalStockValue), icon: CubeIcon, color: 'orange' },
+                    { label: 'Alerte Stock', value: stats.lowStock, icon: ExclamationTriangleIcon, color: stats.lowStock > 0 ? 'rose' : 'teal' },
                 ].map((m, i) => (
-                    <div key={i} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">{m.label}</span>
-                            <m.icon className={`w-5 h-5 text-${m.color}-500 opacity-80`} />
+                    <div key={i} className="metric-card-joy group overflow-hidden relative">
+                        <div className={`absolute top-0 right-0 w-32 h-32 bg-${m.color}-500/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110`}></div>
+                        <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className={`p-3 rounded-2xl bg-${m.color}-50 dark:bg-${m.color}-900/20 text-${m.color}-600 dark:text-${m.color}-400`}>
+                                    <m.icon className="w-6 h-6" />
+                                </div>
+                                {m.label === 'Ventes du jour' && (
+                                    <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-widest">
+                                        En direct
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 mb-1">{m.label}</p>
+                            <div className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter">{m.value}</div>
                         </div>
-                        <div className="text-2xl font-bold text-zinc-900 dark:text-white">{m.value}</div>
                     </div>
                 ))}
             </div>
 
             {/* Charts Row */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div className="xl:col-span-2 p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Flux des revenus (7j)</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-                                <ArrowTrendingUpIcon className="w-3.5 h-3.5" /> +4.2%
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
+                <div className="xl:col-span-2 p-10 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-[2.5rem] shadow-xl shadow-teal-900/5">
+                    <div className="flex items-center justify-between mb-10">
+                        <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-600">Performance Commerciale (7j)</h3>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                <ArrowTrendingUpIcon className="w-3 h-3" /> +4.2%
                             </div>
                         </div>
                     </div>
-                    <div className="h-64">
+                    <div className="h-80">
                         <Line data={trendData} options={chartOptions} />
                     </div>
                 </div>
 
-                <div className="p-8 bg-zinc-900 text-white rounded-xl shadow-xl flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500 mb-6">Alertes Prioritaires</h3>
-                        {lowStockProducts.length > 0 ? (
-                            <div className="space-y-4">
-                                {lowStockProducts.map((p, i) => (
-                                    <div key={i} className="flex items-center justify-between group">
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold truncate group-hover:text-zinc-400 transition-colors">{p.name}</p>
-                                            <p className="text-[10px] text-zinc-500">{p.quantity} unités restantes</p>
-                                        </div>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
-                                    </div>
-                                ))}
+                <div className="p-10 bg-teal-900 dark:bg-zinc-900 text-white rounded-[2.5rem] shadow-2xl shadow-teal-900/40 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-teal-800 to-teal-950 opacity-90"></div>
+                    <div className="relative z-10 h-full flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="p-2.5 bg-white/10 rounded-xl">
+                                    <ExclamationTriangleIcon className="w-5 h-5 text-orange-400" />
+                                </div>
+                                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-100">Alertes Stock</h3>
                             </div>
-                        ) : (
-                            <p className="text-sm text-zinc-500 italic">Aucune alerte critique.</p>
-                        )}
+
+                            {lowStockProducts.length > 0 ? (
+                                <div className="space-y-5">
+                                    {lowStockProducts.map((p, i) => (
+                                        <div key={i} className="flex items-center justify-between group/item p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all cursor-default">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-black truncate">{p.name}</p>
+                                                <p className="text-[10px] text-teal-300 font-bold uppercase tracking-wider">{p.quantity} en stock</p>
+                                            </div>
+                                            <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
+                                                <span className="text-[10px] font-black text-orange-400">!</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                        <CubeIcon className="w-6 h-6 text-teal-200" />
+                                    </div>
+                                    <p className="text-sm font-bold italic">Tout est en ordre</p>
+                                </div>
+                            )}
+                        </div>
+                        <button className="mt-10 w-full py-4 bg-white text-teal-950 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-teal-950/20">
+                            Gérer le stock
+                        </button>
                     </div>
-                    <button className="mt-8 w-full py-3 bg-white text-zinc-950 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-zinc-200 transition-colors">
-                        Voir l&apos;inventaire
-                    </button>
                 </div>
             </div>
 
             {/* Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-                    <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-400 mb-6">Top Performance Produits</h3>
-                    <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-2 p-10 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-[2.5rem]">
+                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-600 mb-8">Top Ventes Produits</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {topProducts.map((p, i) => (
-                            <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0 dark:border-zinc-800">
-                                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-300">{p.name}</span>
-                                <span className="text-sm font-bold text-zinc-900 dark:text-white">{formatCurrency(p.revenue)}</span>
+                            <div key={i} className="flex items-center justify-between p-5 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl group hover:bg-teal-50 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-700 flex items-center justify-center text-teal-600 font-black shadow-sm group-hover:rotate-6 transition-transform">
+                                        {i + 1}
+                                    </div>
+                                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-200">{p.name}</span>
+                                </div>
+                                <span className="text-sm font-black text-teal-600">{formatCurrency(p.revenue)}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="text-3xl font-black text-zinc-900 dark:text-white mb-2">{stats.totalProducts}</div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Références Actives</div>
+                <div className="p-10 bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 rounded-[2.5rem] flex flex-col items-center justify-center group overflow-hidden relative">
+                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-orange-200/20 rounded-full transition-transform group-hover:scale-150"></div>
+                    <div className="relative z-10 text-center">
+                        <div className="text-5xl font-black text-orange-600 mb-3 tracking-tighter">{stats.totalProducts}</div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">Références Actives</div>
+                        <p className="mt-6 text-xs font-bold text-orange-800/60 dark:text-orange-400/60 max-w-[150px]">L&apos;excellence dans la diversité.</p>
                     </div>
                 </div>
             </div>

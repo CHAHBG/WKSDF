@@ -43,53 +43,57 @@ export default function Transactions() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-12 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Transactions Globales</h1>
-                    <p className="mt-1 text-zinc-500 text-sm">Registre des flux financiers et opérations consolidées.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Transactions Globales</h1>
+                    <p className="text-zinc-500 font-medium mt-1">Registre des flux financiers et opérations consolidées.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button onClick={fetchTransactions} className="p-2.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                <div className="flex items-center gap-4">
+                    <button onClick={fetchTransactions} className="p-3 text-teal-600 bg-teal-50 dark:bg-teal-900/20 rounded-2xl border border-teal-100 dark:border-teal-800 transition-all active:scale-95">
                         <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <div className="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                    <div className="bg-zinc-950 dark:bg-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-white dark:text-zinc-950">
                         {transactions.length} Mouvements
                     </div>
                 </div>
             </div>
 
-            <div className="table-container">
-                <table className="w-full text-left text-sm">
+            <div className="table-container shadow-2xl shadow-teal-900/5">
+                <table className="w-full text-left">
                     <thead>
                         <tr className="table-header">
-                            <th className="px-6 py-4">Date</th>
-                            <th className="px-6 py-4">Opération</th>
-                            <th className="px-6 py-4">Détails</th>
-                            <th className="px-6 py-4 text-right">Montant</th>
-                            <th className="px-6 py-4 text-center">État</th>
+                            <th className="px-8 py-6">Date</th>
+                            <th className="px-6 py-6">Opération</th>
+                            <th className="px-6 py-6">Détails</th>
+                            <th className="px-6 py-6 text-right">Montant</th>
+                            <th className="px-8 py-6 text-center">État</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                         {loading ? (
-                            <tr><td colSpan="5" className="px-6 py-12 text-center text-zinc-400 italic">Chargement...</td></tr>
+                            <tr><td colSpan="5" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Récupération de l&apos;historique...</td></tr>
                         ) : transactions.length === 0 ? (
-                            <tr><td colSpan="5" className="px-6 py-12 text-center text-zinc-400 italic">Aucune transaction trouvée.</td></tr>
+                            <tr><td colSpan="5" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Aucune transaction trouvée.</td></tr>
                         ) : (
                             transactions.map((tx) => (
-                                <tr key={tx.id} className="table-row">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
-                                            <CalendarIcon className="w-3.5 h-3.5" />
-                                            <span className="font-medium">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '—'}</span>
+                                <tr key={tx.id} className="table-row group">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-2 text-zinc-500 font-bold text-xs">
+                                            <CalendarIcon className="w-4 h-4 text-teal-600/50" />
+                                            <span>{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-zinc-900 dark:text-zinc-200 uppercase text-[10px] tracking-widest">{tx.type}</td>
-                                    <td className="px-6 py-4 text-zinc-500 line-clamp-1">{tx.description || '—'}</td>
-                                    <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-white">{formatCurrency(tx.amount)}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-1.5 text-emerald-600 font-bold text-[10px] uppercase tracking-widest">
-                                            <CheckCircleIcon className="w-3.5 h-3.5" /> {tx.status || 'COMPLETED'}
+                                    <td className="px-6 py-6">
+                                        <span className="px-3 py-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                            {tx.type}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-6 text-sm font-medium text-zinc-500 truncate max-w-[300px]">{tx.description || '—'}</td>
+                                    <td className="px-6 py-6 text-right font-black text-zinc-900 dark:text-white">{formatCurrency(tx.amount)}</td>
+                                    <td className="px-8 py-6 text-center">
+                                        <div className="inline-flex items-center gap-1.5 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
+                                            <CheckCircleIcon className="w-4 h-4" /> {tx.status || 'COMPLETED'}
                                         </div>
                                     </td>
                                 </tr>

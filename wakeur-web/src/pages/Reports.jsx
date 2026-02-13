@@ -76,53 +76,55 @@ export default function Reports() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-12 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Rapports & Archives</h1>
-                    <p className="mt-1 text-zinc-500 text-sm">Génération de documents PDF pour la comptabilité.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Rapports & Archives</h1>
+                    <p className="text-zinc-500 font-medium mt-1">Génération de documents PDF pour votre gestion.</p>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="space-y-1.5 max-w-sm">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Période d&apos;analyse</label>
+            <div className="premium-card p-10 shadow-2xl shadow-teal-900/5">
+                <div className="space-y-2 max-w-sm">
+                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 ml-1">Période d&apos;analyse</label>
                     <div className="flex gap-4">
-                        <input type="date" className="input-premium !text-sm" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
-                        <input type="date" className="input-premium !text-sm" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
+                        <input type="date" className="input-premium font-bold" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
+                        <input type="date" className="input-premium font-bold" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:border-zinc-300 transition-colors">
-                    <div className="p-10 border-b border-zinc-100 dark:border-zinc-800">
-                        <div className="h-12 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-900 dark:text-white mb-6">
-                            <ClipboardDocumentListIcon className="w-6 h-6" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="premium-card group hover:border-teal-500/30 transition-all duration-500 shadow-2xl shadow-teal-900/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
+                    <div className="p-10 border-b border-zinc-100 dark:border-zinc-800 relative z-10">
+                        <div className="h-14 w-14 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-2xl flex items-center justify-center mb-8 font-black border border-teal-100 dark:border-teal-800 group-hover:rotate-6 transition-transform">
+                            <ClipboardDocumentListIcon className="w-7 h-7" />
                         </div>
-                        <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Inventaire & Stock</h3>
-                        <p className="mt-2 text-zinc-500 text-sm leading-relaxed">État des lieux complet des produits et valorisation marchande.</p>
+                        <h3 className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Inventaire & Stock</h3>
+                        <p className="mt-3 text-zinc-500 font-medium leading-relaxed">État des lieux complet des produits et valorisation marchande en temps réel.</p>
                     </div>
-                    <div className="p-6">
-                        <button onClick={generateInventoryReport} disabled={loading} className="btn-vibrant w-full !py-4 !text-[10px] !uppercase !tracking-[0.2em] shadow-lg">
-                            {loading ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <ArrowDownTrayIcon className="w-4 h-4" />}
-                            Exporter Inventaire
+                    <div className="p-8 relative z-10">
+                        <button onClick={generateInventoryReport} disabled={loading} className="btn-vibrant w-full !py-5 !text-[10px] !uppercase !tracking-[0.3em]">
+                            {loading ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <ArrowDownTrayIcon className="w-5 h-5" />}
+                            Exporter l&apos;Inventaire
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:border-zinc-300 transition-colors">
-                    <div className="p-10 border-b border-zinc-100 dark:border-zinc-800">
-                        <div className="h-12 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-900 dark:text-white mb-6">
-                            <BanknotesIcon className="w-6 h-6" />
+                <div className="premium-card group hover:border-emerald-500/30 transition-all duration-500 shadow-2xl shadow-emerald-900/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
+                    <div className="p-10 border-b border-zinc-100 dark:border-zinc-800 relative z-10">
+                        <div className="h-14 w-14 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-2xl flex items-center justify-center mb-8 font-black border border-emerald-100 dark:border-emerald-800 group-hover:rotate-6 transition-transform">
+                            <BanknotesIcon className="w-7 h-7" />
                         </div>
-                        <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Mobile Money</h3>
-                        <p className="mt-2 text-zinc-500 text-sm leading-relaxed">Analyse des flux digitaux sur la période sélectionnée.</p>
+                        <h3 className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Mobile Money</h3>
+                        <p className="mt-3 text-zinc-500 font-medium leading-relaxed">Analyse détaillée des flux digitaux et transactions financières opérées.</p>
                     </div>
-                    <div className="p-6">
-                        <button onClick={generateMobileMoneyReport} disabled={loading} className="btn-vibrant w-full !py-4 !text-[10px] !uppercase !tracking-[0.2em] shadow-lg">
-                            {loading ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <ArrowDownTrayIcon className="w-4 h-4" />}
-                            Exporter Rapport MM
+                    <div className="p-8 relative z-10">
+                        <button onClick={generateMobileMoneyReport} disabled={loading} className="btn-vibrant w-full !py-5 !text-[10px] !uppercase !tracking-[0.3em] !from-emerald-600 !to-emerald-700 shadow-emerald-600/20">
+                            {loading ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <ArrowDownTrayIcon className="w-5 h-5" />}
+                            Exporter le Rapport MM
                         </button>
                     </div>
                 </div>

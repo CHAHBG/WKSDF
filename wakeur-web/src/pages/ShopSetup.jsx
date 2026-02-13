@@ -58,40 +58,42 @@ export default function ShopSetup() {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6">
-            <div className="w-full max-w-4xl flex flex-col md:flex-row bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-premium">
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6 animate-fade-in">
+            <div className="w-full max-w-5xl flex flex-col md:flex-row bg-white dark:bg-zinc-900 rounded-[3rem] overflow-hidden shadow-2xl shadow-teal-900/10 border border-zinc-200/50 dark:border-zinc-800/50">
 
-                <div className="md:w-5/12 bg-zinc-900 p-12 text-white flex flex-col justify-between">
-                    <div>
-                        <div className="h-10 w-10 bg-white text-zinc-950 rounded-lg flex items-center justify-center mb-10">
-                            <BuildingStorefrontIcon className="w-5 h-5" />
+                <div className="md:w-5/12 bg-zinc-950 p-16 text-white flex flex-col justify-between relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                    <div className="relative z-10">
+                        <div className="h-14 w-14 bg-teal-500 rounded-2xl flex items-center justify-center mb-12 shadow-lg shadow-teal-500/20">
+                            <BuildingStorefrontIcon className="w-7 h-7 text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold">Identité du Commerce.</h1>
-                        <p className="mt-4 text-zinc-400 text-sm leading-relaxed max-w-xs">Définissez les informations fondamentales de votre point de vente pour activer les fonctionnalités de gestion.</p>
+                        <h1 className="text-4xl font-black tracking-tighter leading-tight">Configuration de votre commerce.</h1>
+                        <p className="mt-6 text-zinc-400 font-medium text-lg leading-relaxed">Activez la puissance de Wakeur en définissant l&apos;identité fondamentale de votre boutique.</p>
                     </div>
                 </div>
 
-                <div className="md:w-7/12 p-12 lg:p-16">
+                <div className="md:w-7/12 p-16 lg:p-20">
                     <div className="max-w-md mx-auto">
-                        <div className="mb-10">
-                            <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Initialisation</h2>
+                        <div className="mb-12">
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-teal-600 mb-2 block">Étape Finale</span>
+                            <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Initialisation d&apos;activité</h2>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-8">
                             {error && (
-                                <div className="p-4 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold">
+                                <div className="p-5 bg-rose-50 text-rose-600 rounded-2xl text-xs font-black uppercase tracking-widest border border-rose-100 animate-shake">
                                     {error}
                                 </div>
                             )}
 
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Nom du commerce</label>
-                                <div className="relative">
-                                    <BuildingStorefrontIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Nom de l&apos;établissement</label>
+                                <div className="relative group">
+                                    <BuildingStorefrontIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
                                     <input
                                         type="text"
                                         required
-                                        className="input-premium pl-11 !text-sm"
+                                        className="input-premium pl-14 h-14"
                                         placeholder="Ex: Boutique Sokhna"
                                         value={shopName}
                                         onChange={(e) => setShopName(e.target.value)}
@@ -99,47 +101,48 @@ export default function ShopSetup() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Téléphone</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Téléphone</label>
                                     <input
                                         type="tel"
-                                        className="input-premium !text-sm"
+                                        className="input-premium h-14"
                                         value={phoneNumber}
+                                        placeholder="+221 ..."
                                         onChange={(e) => setPhoneNumber(e.target.value)}
                                     />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Email</label>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Email PRO</label>
                                     <input
                                         type="email"
-                                        className="input-premium !text-sm"
+                                        className="input-premium h-14"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Localisation</label>
-                                <div className="relative">
-                                    <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Localisation précise</label>
+                                <div className="relative group">
+                                    <MapPinIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
                                     <input
                                         type="text"
-                                        className="input-premium pl-11 !text-sm"
-                                        placeholder="Ville, Quartier"
+                                        className="input-premium pl-14 h-14"
+                                        placeholder="Ville, Quartier, Rue"
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 pt-4">
-                                <button type="submit" disabled={submitting} className="btn-vibrant flex-1 !py-4 !text-sm !uppercase !tracking-[0.2em]">
-                                    {submitting ? "Configuration..." : "Finaliser"}
+                            <div className="flex gap-4 pt-6">
+                                <button type="submit" disabled={submitting} className="btn-vibrant flex-1 h-16 !text-sm !uppercase !tracking-[0.2em]">
+                                    {submitting ? "Finalisation..." : "Activer mon commerce"}
                                 </button>
-                                <button type="button" onClick={() => signOut().then(() => navigate('/login'))} className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                                    <ArrowLeftOnRectangleIcon className="w-5 h-5 text-zinc-400" />
+                                <button type="button" onClick={() => signOut().then(() => navigate('/login'))} className="h-16 w-16 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-95 text-zinc-400 hover:text-rose-500">
+                                    <ArrowLeftOnRectangleIcon className="w-6 h-6" />
                                 </button>
                             </div>
                         </form>

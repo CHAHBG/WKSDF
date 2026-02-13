@@ -115,86 +115,109 @@ export default function MobileMoney() {
     const totalPlatforms = Object.values(currentBalances.platforms).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-12 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Mobile Money</h1>
-                    <p className="mt-1 text-zinc-500 text-sm">Gestion des flux digitaux et espèces de service.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Mobile Money</h1>
+                    <p className="text-zinc-500 font-medium mt-1">Gestion des flux digitaux et espèces de service.</p>
                 </div>
-                <button onClick={() => setShowTransactionModal(true)} disabled={!dailyReport} className="btn-vibrant !text-xs !uppercase !tracking-widest disabled:opacity-50">
-                    <PlusIcon className="w-4 h-4" /> Opération
+                <button
+                    onClick={() => setShowTransactionModal(true)}
+                    disabled={!dailyReport}
+                    className="btn-vibrant disabled:opacity-50"
+                >
+                    <PlusIcon className="w-5 h-5" /> Nouvelle Opération
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Joyful Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
-                    { label: 'En Caisse (Espèces)', value: formatCurrency(totalCash), icon: BanknotesIcon, color: 'emerald' },
-                    { label: 'En Portefeuille (Application)', value: formatCurrency(totalPlatforms), icon: DevicePhoneMobileIcon, color: 'zinc' },
-                    { label: 'Liquidité Totale', value: formatCurrency(totalCash + totalPlatforms), icon: ChartBarIcon, color: 'zinc', highlight: true },
+                    { label: 'En Caisse (Espèces)', value: totalCash, icon: BanknotesIcon, color: 'emerald' },
+                    { label: 'En Portefeuille (Digital)', value: totalPlatforms, icon: DevicePhoneMobileIcon, color: 'teal' },
+                    { label: 'Liquidité Totale', value: totalCash + totalPlatforms, icon: ChartBarIcon, color: 'orange', highlight: true },
                 ].map((s, i) => (
-                    <div key={i} className={`p-6 rounded-xl border ${s.highlight ? 'bg-zinc-900 border-zinc-800 text-white dark:bg-white dark:text-zinc-900' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'} transition-all`}>
-                        <div className="flex items-center justify-between mb-3">
-                            <s.icon className={`h-5 w-5 ${s.highlight ? 'text-zinc-400' : `text-${s.color}-500 opacity-60`}`} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">{s.label}</span>
+                    <div key={i} className={`metric-card-joy group relative overflow-hidden ${s.highlight ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 !border-transparent' : ''}`}>
+                        {!s.highlight && <div className={`absolute top-0 right-0 w-24 h-24 bg-${s.color}-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110`}></div>}
+                        <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className={`p-3 rounded-2xl ${s.highlight ? 'bg-white/10 dark:bg-zinc-100 text-white dark:text-zinc-900' : `bg-${s.color}-50 dark:bg-${s.color}-900/20 text-${s.color}-600`}`}>
+                                    <s.icon className="w-6 h-6" />
+                                </div>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${s.highlight ? 'opacity-50' : 'text-zinc-400'}`}>{s.label}</span>
+                            </div>
+                            <p className="text-3xl font-black tracking-tighter">{formatCurrency(s.value)}</p>
                         </div>
-                        <p className="text-2xl font-bold">{s.value}</p>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="p-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-6">Soldes Digitaux</h3>
-                    <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div className="premium-card p-10 shadow-2xl shadow-teal-900/5">
+                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-600 mb-8">Soldes Digitaux</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {platforms.map(p => (
-                            <div key={p.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
-                                <span className="font-bold text-zinc-900 dark:text-white text-sm uppercase tracking-wide">{p.name}</span>
-                                <span className="font-bold text-zinc-900 dark:text-white">{formatCurrency(currentBalances.platforms[p.id] || 0)}</span>
+                            <div key={p.id} className="flex items-center justify-between p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-transparent hover:border-teal-500/20 transition-all group">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">{p.name}</span>
+                                    <span className="font-black text-zinc-900 dark:text-white tracking-tight">{formatCurrency(currentBalances.platforms[p.id] || 0)}</span>
+                                </div>
+                                <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center text-teal-600 group-hover:scale-110 transition-transform">
+                                    <DevicePhoneMobileIcon className="w-4 h-4" />
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="p-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-6">Détail Espèces</h3>
-                    <div className="grid grid-cols-2 gap-3">
+                <div className="premium-card p-10 shadow-2xl shadow-orange-900/5">
+                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-orange-600 mb-8">Détail Espèces</h3>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {Object.entries(currentBalances.cash).map(([denom, qty]) => (
-                            <div key={denom} className="flex justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg text-xs">
-                                <span className="text-zinc-400 font-bold uppercase">{denom.replace(/[bc]/, '')} F</span>
-                                <span className="font-bold text-zinc-900 dark:text-white">×{qty}</span>
+                            <div key={denom} className="flex flex-col items-center justify-center p-4 bg-orange-50/50 dark:bg-orange-900/10 rounded-2xl border border-orange-100/50 dark:border-orange-900/20">
+                                <span className="text-[10px] font-black text-orange-600 mb-1">{denom.replace(/[bc]/, '')}F</span>
+                                <span className="text-lg font-black text-zinc-900 dark:text-white">×{qty}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            <div className="table-container">
-                <table className="w-full text-left text-sm">
+            <div className="table-container shadow-2xl shadow-teal-900/5">
+                <table className="w-full text-left">
                     <thead>
                         <tr className="table-header">
-                            <th className="px-6 py-4">Horodatage</th>
-                            <th className="px-6 py-4">Opération</th>
-                            <th className="px-6 py-4">Opérateur</th>
-                            <th className="px-6 py-4 text-right">Montant</th>
-                            <th className="px-6 py-4 text-center">État</th>
+                            <th className="px-8 py-6">Horodatage</th>
+                            <th className="px-6 py-6">Opération</th>
+                            <th className="px-6 py-6">Opérateur</th>
+                            <th className="px-6 py-6 text-right">Montant</th>
+                            <th className="px-8 py-6 text-center">État</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                         {transactions.map(t => (
-                            <tr key={t.id} className="table-row">
-                                <td className="px-6 py-4 text-zinc-500 text-xs">
-                                    {new Date(t.transaction_date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            <tr key={t.id} className="table-row group">
+                                <td className="px-8 py-6">
+                                    <div className="flex items-center gap-2 text-zinc-500 font-bold text-xs">
+                                        <CalendarIcon className="w-4 h-4 text-teal-600/50" />
+                                        <span>{new Date(t.transaction_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} • {new Date(t.transaction_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <div className={`flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-widest ${t.operation_type === 'ENCAISSEMENT' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                <td className="px-6 py-6">
+                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${t.operation_type === 'ENCAISSEMENT' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                        {t.operation_type === 'ENCAISSEMENT' ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
                                         {t.operation_type}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 font-semibold text-zinc-600 dark:text-zinc-400">{t.mm_platforms?.name}</td>
-                                <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-white">{formatCurrency(t.amount)}</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center justify-center gap-1.5 text-emerald-600 font-bold text-[10px] uppercase tracking-widest">
-                                        <CheckCircleIcon className="w-3.5 h-3.5" /> {t.status}
+                                <td className="px-6 py-6">
+                                    <span className="px-3 py-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg text-xs font-black text-zinc-500 uppercase tracking-widest">
+                                        {t.mm_platforms?.name}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-6 text-right font-black text-zinc-900 dark:text-white">{formatCurrency(t.amount)}</td>
+                                <td className="px-8 py-6 text-center">
+                                    <div className="inline-flex items-center gap-1.5 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
+                                        <CheckCircleIcon className="w-4 h-4" /> {t.status}
                                     </div>
                                 </td>
                             </tr>

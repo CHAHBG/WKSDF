@@ -44,57 +44,60 @@ export default function Transfers() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-12 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Historique des Transferts</h1>
-                    <p className="mt-1 text-zinc-500 text-sm">Registre des mouvements de fonds inter-comptes.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Historique des Transferts</h1>
+                    <p className="text-zinc-500 font-medium mt-1">Registre des mouvements de fonds inter-comptes.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button onClick={fetchTransfers} className="p-2.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                <div className="flex items-center gap-4">
+                    <button onClick={fetchTransfers} className="p-3 text-teal-600 bg-teal-50 dark:bg-teal-900/20 rounded-2xl border border-teal-100 dark:border-teal-800 transition-all active:scale-95">
                         <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <div className="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                    <div className="bg-zinc-950 dark:bg-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-white dark:text-zinc-950">
                         {transfers.length} Opérations
                     </div>
                 </div>
             </div>
 
-            <div className="table-container">
-                <table className="w-full text-left text-sm">
+            <div className="table-container shadow-2xl shadow-teal-900/5">
+                <table className="w-full text-left">
                     <thead>
                         <tr className="table-header">
-                            <th className="px-6 py-4">Date & Heure</th>
-                            <th className="px-6 py-4">Désignation</th>
-                            <th className="px-6 py-4 text-right">Montant</th>
-                            <th className="px-6 py-4 text-center">Statut</th>
+                            <th className="px-8 py-6">Date & Heure</th>
+                            <th className="px-6 py-6">Désignation</th>
+                            <th className="px-6 py-6 text-right">Montant</th>
+                            <th className="px-8 py-6 text-center">Statut</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                         {loading ? (
-                            <tr><td colSpan="4" className="px-6 py-12 text-center text-zinc-400 italic">Chargement...</td></tr>
+                            <tr><td colSpan="4" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Récupération des données...</td></tr>
                         ) : transfers.length === 0 ? (
-                            <tr><td colSpan="4" className="px-6 py-12 text-center text-zinc-400 italic font-medium">Aucun transfert enregistré.</td></tr>
+                            <tr><td colSpan="4" className="px-8 py-16 text-center text-zinc-400 italic font-medium">Aucun transfert enregistré.</td></tr>
                         ) : (
                             transfers.map((t) => {
                                 const { text, icon: StatusIcon } = getStatusStyle(t.status);
                                 const date = t.created_at || t.date;
                                 return (
-                                    <tr key={t.id} className="table-row">
-                                        <td className="px-6 py-4">
+                                    <tr key={t.id} className="table-row group">
+                                        <td className="px-8 py-6">
                                             <div className="flex flex-col">
-                                                <span className="font-semibold text-zinc-900 dark:text-zinc-200">
-                                                    {new Date(date).toLocaleDateString('fr-FR')}
-                                                </span>
-                                                <span className="text-[10px] text-zinc-400">
+                                                <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-black text-sm mb-1 tracking-tight">
+                                                    <CalendarIcon className="w-4 h-4 text-teal-600/50" />
+                                                    {new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-6">
                                                     {new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-zinc-600 dark:text-zinc-400">{t.description || 'N/A'}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-white">{formatCurrency(t.amount)}</td>
-                                        <td className="px-6 py-4">
-                                            <div className={`flex items-center justify-center gap-1.5 ${text} font-bold text-[10px] uppercase tracking-widest`}>
+                                        <td className="px-6 py-6">
+                                            <span className="text-sm font-medium text-zinc-500 line-clamp-1">{t.description || 'N/A'}</span>
+                                        </td>
+                                        <td className="px-6 py-6 text-right font-black text-zinc-900 dark:text-white">{formatCurrency(t.amount)}</td>
+                                        <td className="px-8 py-6 text-center">
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg ${text.includes('emerald') ? 'bg-emerald-50' : text.includes('amber') ? 'bg-amber-50' : 'bg-rose-50'} ${text} font-black text-[10px] uppercase tracking-widest border border-current opacity-80`}>
                                                 <StatusIcon className="w-3.5 h-3.5" />
                                                 {t.status || 'pending'}
                                             </div>
@@ -106,6 +109,6 @@ export default function Transfers() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }

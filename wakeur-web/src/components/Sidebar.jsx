@@ -50,9 +50,9 @@ export default function Sidebar({ isOpen = false, onClose = () => { } }) {
 
     const linkClass = (path) => {
         const isActive = location.pathname === path;
-        return `group flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${isActive
-            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-sm'
-            : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
+        return `group flex items-center gap-3 rounded-2xl px-5 py-3 text-sm font-bold transition-all duration-300 ${isActive
+            ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20 scale-[1.02]'
+            : 'text-zinc-500 hover:bg-teal-50 hover:text-teal-600 dark:text-zinc-400 dark:hover:bg-teal-900/20 dark:hover:text-teal-400'
             }`;
     };
 
@@ -61,41 +61,41 @@ export default function Sidebar({ isOpen = false, onClose = () => { } }) {
             {isOpen && (
                 <div
                     onClick={onClose}
-                    className="fixed inset-0 z-40 bg-zinc-900/20 backdrop-blur-[2px] lg:hidden transition-opacity"
+                    className="fixed inset-0 z-40 bg-teal-900/10 backdrop-blur-sm lg:hidden transition-opacity"
                 />
             )}
 
             <aside
-                className={`fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r border-zinc-200 bg-white dark:bg-zinc-950 dark:border-zinc-800 p-6 shadow-sm transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed left-0 top-0 z-50 flex h-full w-72 flex-col border-r border-zinc-200/50 bg-white/80 backdrop-blur-xl dark:bg-zinc-950/80 dark:border-zinc-800 p-8 transition-transform duration-500 ease-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
                 {/* Brand Logo Section */}
-                <div className="mb-10 flex items-center justify-between px-2">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950">
-                            <span className="text-lg font-bold">W</span>
+                <div className="mb-12 flex items-center justify-between px-2">
+                    <div className="flex items-center gap-4 group cursor-pointer">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-xl shadow-teal-600/30 group-hover:rotate-6 transition-transform">
+                            <span className="text-xl font-black">W</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-base font-bold tracking-tight text-zinc-950 dark:text-white uppercase italic">Wakeur</span>
-                            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Sokhna Daba</span>
+                            <span className="text-lg font-black tracking-tighter text-zinc-900 dark:text-white uppercase italic">Wakeur</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-teal-600 dark:text-teal-400">Sokhna Daba</span>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-900 lg:hidden"
+                        className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-500 hover:bg-zinc-100 lg:hidden"
                     >
-                        <XMarkIcon className="h-5 w-5" />
+                        <XMarkIcon className="h-6 w-6" />
                     </button>
                 </div>
 
                 {/* Navigation Items */}
-                <nav className="flex-1 space-y-8 overflow-y-auto pr-2 scrollbar-hide">
+                <nav className="flex-1 space-y-10 overflow-y-auto pr-2 scrollbar-hide">
                     {Object.entries(groupedItems).map(([section, items]) => (
-                        <div key={section} className="space-y-1.5">
-                            <h3 className="px-4 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600 mb-2">
+                        <div key={section} className="space-y-3">
+                            <h3 className="px-5 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-600">
                                 {section}
                             </h3>
-                            <div className="space-y-0.5">
+                            <div className="space-y-1.5">
                                 {items.map((item) => (
                                     <Link
                                         key={item.path}
@@ -103,7 +103,7 @@ export default function Sidebar({ isOpen = false, onClose = () => { } }) {
                                         className={linkClass(item.path)}
                                         onClick={onClose}
                                     >
-                                        <item.icon className="h-4.5 w-4.5" />
+                                        <item.icon className="h-5 w-5" />
                                         {item.label}
                                     </Link>
                                 ))}
@@ -113,26 +113,26 @@ export default function Sidebar({ isOpen = false, onClose = () => { } }) {
                 </nav>
 
                 {/* Profile/Footer Section */}
-                <div className="mt-6 border-t border-zinc-100 dark:border-zinc-800 pt-6">
-                    <div className="mb-4 flex items-center gap-3 px-2">
-                        <div className="h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                <div className="mt-8 border-t border-zinc-100 dark:border-zinc-800 pt-8">
+                    <div className="mb-6 flex items-center gap-4 px-2">
+                        <div className="h-10 w-10 rounded-2xl bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center text-sm font-black text-teal-600 border border-teal-100 dark:border-teal-800">
                             {userProfile?.full_name?.charAt(0) || 'U'}
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold truncate text-zinc-900 dark:text-white">
+                            <span className="text-sm font-black truncate text-zinc-900 dark:text-white">
                                 {userProfile?.full_name || 'Utilisateur'}
                             </span>
-                            <span className="text-[9px] font-medium text-zinc-500 uppercase tracking-wider">
-                                {userProfile?.role === 'owner' ? 'Propriétaire' : 'Agent de vente'}
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                                {userProfile?.role === 'owner' ? 'Propriétaire' : 'Agent'}
                             </span>
                         </div>
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                        className="flex w-full items-center gap-3 rounded-2xl px-5 py-3 text-xs font-black text-rose-500 transition-all hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:gap-4"
                     >
-                        <ArrowLeftOnRectangleIcon className="h-4 w-4" />
-                        Déconnexion
+                        <ArrowLeftOnRectangleIcon className="h-5 w-5" />
+                        Se déconnecter
                     </button>
                 </div>
             </aside>
