@@ -3,7 +3,7 @@
     "name": "Ness",
     "slug": "ness-shop",
     "version": "1.0.0",
-    "scheme": "wakeur",
+    "scheme": "ness",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -31,7 +31,7 @@
           ],
           "data": [
             {
-              "scheme": "wakeur"
+              "scheme": "ness"
             }
           ]
         }

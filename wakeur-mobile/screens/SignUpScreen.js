@@ -51,7 +51,7 @@ export default function SignUpScreen({ navigation }) {
 
                 <View style={styles.headerContainer}>
                     <Text style={styles.title}>Créer un Compte</Text>
-                    <Text style={styles.subtitle}>Rejoignez Wakeur Sokhna</Text>
+                    <Text style={styles.subtitle}>Rejoignez NESS</Text>
                 </View>
 
                 <View style={styles.glassContainer}>

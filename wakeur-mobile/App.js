@@ -25,7 +25,7 @@ import AnimatedSplashScreen from './screens/AnimatedSplashScreen';
 
 const Stack = createStackNavigator();
 const linking = {
-  prefixes: [Linking.createURL('/'), 'wakeur://'],
+  prefixes: [Linking.createURL('/'), 'ness://'],
   config: {
     screens: {
       Login: 'login',

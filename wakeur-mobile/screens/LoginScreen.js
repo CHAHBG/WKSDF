@@ -189,7 +189,7 @@ export default function LoginScreen({ navigation }) {
 
                     <View style={styles.contentContainer}>
                         <View style={styles.headerContainer}>
-                            <Text style={styles.title}>Wakeur Sokhna</Text>
+                            <Text style={styles.title}>NESS</Text>
                             <Text style={styles.subtitle}>
                                 {isAgentLogin ? 'Espace Agent' : 'Connexion Administration'}
                             </Text>

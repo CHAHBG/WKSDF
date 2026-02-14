@@ -102,7 +102,7 @@ export default function ShopSetupScreen({ navigation, route }) {
                             style={styles.input}
                             value={shopName}
                             onChangeText={setShopName}
-                            placeholder="Ex: Wakeur Sokhna"
+                            placeholder="Ex: NESS Boutique"
                             placeholderTextColor={COLORS.textLight}
                         />
                     </View>

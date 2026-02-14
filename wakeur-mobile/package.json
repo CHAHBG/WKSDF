@@ -17,7 +17,7 @@
     "@supabase/supabase-js": "^2.84.0",
     "axios": "^1.13.2",
     "base64-arraybuffer": "^1.0.2",
-    "expo": "~54.0.25",
+    "expo": "~54.0.33",
     "expo-camera": "^17.0.9",
     "expo-image-picker": "~17.0.8",
     "expo-print": "~15.0.7",
