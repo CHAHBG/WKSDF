@@ -6,12 +6,12 @@ import {
     BanknotesIcon,
     ArrowTrendingUpIcon,
     ArrowTrendingDownIcon,
-    ClockIcon,
     PlusIcon,
     XMarkIcon,
     CalendarIcon,
     CheckCircleIcon,
-    ChartBarIcon
+    WalletIcon,
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 const formatCurrency = (val) => new Intl.NumberFormat('fr-FR').format(Math.round(val || 0)) + ' F';
@@ -30,6 +30,12 @@ export default function MobileMoney() {
     const [cashBreakdown, setCashBreakdown] = useState({ b10000: '', b5000: '', b2000: '', b1000: '', c500: '', c250: '', c200: '', c100: '', c50: '' });
     const [platformBalances, setPlatformBalances] = useState({});
     const [selectedPlatform, setSelectedPlatform] = useState(null);
+    const [transactionAmount, setTransactionAmount] = useState('');
+    const [transactionType, setTransactionType] = useState('ENCAISSEMENT');
+    // Using a simplified cash input for transactions in this design, 
+    // or keeping breakdown if strictly required. 
+    // For "Clean" design, usually total amount is preferred unless cash breakdown is mandatory per transaction.
+    // Assuming we keep the logic but simplify the UI.
     const [transactionCash, setTransactionCash] = useState({ b10000: '', b5000: '', b2000: '', b1000: '', c500: '', c250: '', c200: '', c100: '', c50: '' });
 
     useEffect(() => {
@@ -57,10 +63,16 @@ export default function MobileMoney() {
             try {
                 const notesStr = t.notes || '{}';
                 const breakdown = JSON.parse(notesStr.includes('Breakdown:') ? notesStr.replace('Breakdown: ', '') : notesStr).cash_breakdown || {};
+
+                // If breakdown exists, use it. If not (simplified UI), we might need to adjust logic.
+                // For now, retaining original logic assuming breakdown is provided or we adapt `transactionCash`
+
                 if (t.operation_type === 'ENCAISSEMENT') {
+                    // In (Deposit to customer phone) -> We receive Cash, We lose Float
                     Object.keys(breakdown).forEach(key => currentCash[key] = (parseInt(currentCash[key]) || 0) + (parseInt(breakdown[key]) || 0));
                     currentPlatforms[t.platform_id] = (parseFloat(currentPlatforms[t.platform_id]) || 0) - parseFloat(t.amount);
                 } else {
+                    // Out (Withdrawal from customer phone) -> We give Cash, We gain Float
                     Object.keys(breakdown).forEach(key => currentCash[key] = (parseInt(currentCash[key]) || 0) - (parseInt(breakdown[key]) || 0));
                     currentPlatforms[t.platform_id] = (parseFloat(currentPlatforms[t.platform_id]) || 0) + parseFloat(t.amount);
                 }
@@ -102,10 +114,20 @@ export default function MobileMoney() {
         checkDailyReport();
     };
 
-    const handleCreateTransaction = async (type) => {
+    const handleCreateTransaction = async () => {
         const total = calculateTotal(transactionCash);
         if (!total || !selectedPlatform) return;
-        await supabase.from('mm_transactions').insert({ platform_id: selectedPlatform, operation_type: type, amount: total, total_amount: total, notes: JSON.stringify({ cash_breakdown: transactionCash }), status: 'COMPLETED', transaction_date: new Date().toISOString() });
+
+        await supabase.from('mm_transactions').insert({
+            platform_id: selectedPlatform,
+            operation_type: transactionType,
+            amount: total,
+            total_amount: total,
+            notes: JSON.stringify({ cash_breakdown: transactionCash }),
+            status: 'COMPLETED',
+            transaction_date: new Date().toISOString()
+        });
+
         setShowTransactionModal(false);
         setTransactionCash({ b10000: '', b5000: '', b2000: '', b1000: '', c500: '', c250: '', c200: '', c100: '', c50: '' });
         fetchTransactions();
@@ -113,160 +135,255 @@ export default function MobileMoney() {
 
     const totalCash = calculateTotal(currentBalances.cash);
     const totalPlatforms = Object.values(currentBalances.platforms).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+    const currentTransactionTotal = calculateTotal(transactionCash);
 
     return (
-        <div className="space-y-12 animate-fade-in">
+        <div className="space-y-8 animate-enter">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Mobile Money</h1>
-                    <p className="text-zinc-500 font-medium mt-1">Gestion des flux digitaux et espèces de service.</p>
+                    <h1 className="text-2xl font-serif-display font-bold text-[var(--text-main)]">Mobile Money</h1>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">Gestion des opérations et de la liquidité.</p>
                 </div>
-                <button
-                    onClick={() => setShowTransactionModal(true)}
-                    disabled={!dailyReport}
-                    className="btn-vibrant disabled:opacity-50"
-                >
-                    <PlusIcon className="w-5 h-5" /> Nouvelle Opération
-                </button>
+                <div className="flex items-center gap-3">
+                    <button onClick={fetchTransactions} className="btn-secondary text-xs">
+                        <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                        onClick={() => setShowTransactionModal(true)}
+                        disabled={!dailyReport}
+                        className="btn-primary text-xs flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <PlusIcon className="w-4 h-4" /> Nouvelle Opération
+                    </button>
+                </div>
             </div>
 
-            {/* Joyful Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[
-                    { label: 'En Caisse (Espèces)', value: totalCash, icon: BanknotesIcon, color: 'emerald' },
-                    { label: 'En Portefeuille (Digital)', value: totalPlatforms, icon: DevicePhoneMobileIcon, color: 'teal' },
-                    { label: 'Liquidité Totale', value: totalCash + totalPlatforms, icon: ChartBarIcon, color: 'orange', highlight: true },
-                ].map((s, i) => (
-                    <div key={i} className={`metric-card-joy group relative overflow-hidden ${s.highlight ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 !border-transparent' : ''}`}>
-                        {!s.highlight && <div className={`absolute top-0 right-0 w-24 h-24 bg-${s.color}-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110`}></div>}
-                        <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className={`p-3 rounded-2xl ${s.highlight ? 'bg-white/10 dark:bg-zinc-100 text-white dark:text-zinc-900' : `bg-${s.color}-50 dark:bg-${s.color}-900/20 text-${s.color}-600`}`}>
-                                    <s.icon className="w-6 h-6" />
-                                </div>
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${s.highlight ? 'opacity-50' : 'text-zinc-400'}`}>{s.label}</span>
-                            </div>
-                            <p className="text-3xl font-black tracking-tighter">{formatCurrency(s.value)}</p>
+            {/* Balances */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="card-modern p-5 flex flex-col justify-between h-32">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Espèces (Caisse)</p>
+                            <h3 className="text-2xl font-bold text-[var(--text-main)] mt-1 tracking-tight">{formatCurrency(totalCash)}</h3>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[var(--bg-subtle)] text-[var(--primary)]">
+                            <BanknotesIcon className="w-5 h-5" />
                         </div>
                     </div>
-                ))}
+                </div>
+                <div className="card-modern p-5 flex flex-col justify-between h-32">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Flotte (Numérique)</p>
+                            <h3 className="text-2xl font-bold text-[var(--text-main)] mt-1 tracking-tight">{formatCurrency(totalPlatforms)}</h3>
+                        </div>
+                        <div className="p-2 rounded-lg bg-[var(--bg-subtle)] text-[var(--text-main)]">
+                            <DevicePhoneMobileIcon className="w-5 h-5" />
+                        </div>
+                    </div>
+                </div>
+                <div className="card-modern p-5 flex flex-col justify-between h-32 bg-[var(--text-main)] text-[var(--bg-app)]">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">Liquidité Totale</p>
+                            <h3 className="text-2xl font-bold mt-1 tracking-tight">{formatCurrency(totalCash + totalPlatforms)}</h3>
+                        </div>
+                        <div className="p-2 rounded-lg bg-white/10">
+                            <WalletIcon className="w-5 h-5" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div className="premium-card p-10 shadow-2xl shadow-teal-900/5">
-                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-600 mb-8">Soldes Digitaux</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Platform Balances */}
+                <div className="card-modern p-0 overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-[var(--border)] bg-[var(--bg-card)]">
+                        <h3 className="font-bold text-[var(--text-main)] text-sm">Soldes par Opérateur</h3>
+                    </div>
+                    <div className="p-2 space-y-1">
                         {platforms.map(p => (
-                            <div key={p.id} className="flex items-center justify-between p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-transparent hover:border-teal-500/20 transition-all group">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">{p.name}</span>
-                                    <span className="font-black text-zinc-900 dark:text-white tracking-tight">{formatCurrency(currentBalances.platforms[p.id] || 0)}</span>
-                                </div>
-                                <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center text-teal-600 group-hover:scale-110 transition-transform">
-                                    <DevicePhoneMobileIcon className="w-4 h-4" />
-                                </div>
+                            <div key={p.id} className="flex items-center justify-between p-3 hover:bg-[var(--bg-subtle)] rounded-xl transition-colors">
+                                <span className="text-sm font-medium text-[var(--text-muted)]">{p.name}</span>
+                                <span className="text-sm font-bold text-[var(--text-main)]">{formatCurrency(currentBalances.platforms[p.id] || 0)}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="premium-card p-10 shadow-2xl shadow-orange-900/5">
-                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-orange-600 mb-8">Détail Espèces</h3>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {/* Cash Breakdown */}
+                <div className="lg:col-span-2 card-modern p-0 overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-[var(--border)] bg-[var(--bg-card)]">
+                        <h3 className="font-bold text-[var(--text-main)] text-sm">Détail des Espèces</h3>
+                    </div>
+                    <div className="p-4 grid grid-cols-3 sm:grid-cols-5 gap-3">
                         {Object.entries(currentBalances.cash).map(([denom, qty]) => (
-                            <div key={denom} className="flex flex-col items-center justify-center p-4 bg-orange-50/50 dark:bg-orange-900/10 rounded-2xl border border-orange-100/50 dark:border-orange-900/20">
-                                <span className="text-[10px] font-black text-orange-600 mb-1">{denom.replace(/[bc]/, '')}F</span>
-                                <span className="text-lg font-black text-zinc-900 dark:text-white">×{qty}</span>
+                            <div key={denom} className="flex flex-col items-center justify-center p-3 bg-[var(--bg-subtle)] rounded-xl border border-[var(--border-subtle)]">
+                                <span className="text-[10px] font-bold text-[var(--text-muted)] mb-1">{denom.replace(/[bc]/, '')}F</span>
+                                <span className="text-base font-bold text-[var(--text-main)]">{qty}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            <div className="table-container shadow-2xl shadow-teal-900/5">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="table-header">
-                            <th className="px-8 py-6">Horodatage</th>
-                            <th className="px-6 py-6">Opération</th>
-                            <th className="px-6 py-6">Opérateur</th>
-                            <th className="px-6 py-6 text-right">Montant</th>
-                            <th className="px-8 py-6 text-center">État</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                        {transactions.map(t => (
-                            <tr key={t.id} className="table-row group">
-                                <td className="px-8 py-6">
-                                    <div className="flex items-center gap-2 text-zinc-500 font-bold text-xs">
-                                        <CalendarIcon className="w-4 h-4 text-teal-600/50" />
-                                        <span>{new Date(t.transaction_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} • {new Date(t.transaction_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-6">
-                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${t.operation_type === 'ENCAISSEMENT' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                                        {t.operation_type === 'ENCAISSEMENT' ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
-                                        {t.operation_type}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-6">
-                                    <span className="px-3 py-1 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg text-xs font-black text-zinc-500 uppercase tracking-widest">
-                                        {t.mm_platforms?.name}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-6 text-right font-black text-zinc-900 dark:text-white">{formatCurrency(t.amount)}</td>
-                                <td className="px-8 py-6 text-center">
-                                    <div className="inline-flex items-center gap-1.5 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
-                                        <CheckCircleIcon className="w-4 h-4" /> {t.status}
-                                    </div>
-                                </td>
+            {/* Transactions Table */}
+            <div className="card-modern overflow-hidden">
+                <div className="p-5 border-b border-[var(--border)] bg-[var(--bg-card)]">
+                    <h3 className="font-bold text-[var(--text-main)]">Transactions Récentes</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="table-modern w-full">
+                        <thead>
+                            <tr>
+                                <th className="pl-6">Date</th>
+                                <th>Opération</th>
+                                <th>Opérateur</th>
+                                <th className="text-right">Montant</th>
+                                <th className="text-center pr-6">Statut</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {transactions.map(t => (
+                                <tr key={t.id} className="group hover:bg-[var(--bg-subtle)] transition-colors">
+                                    <td className="pl-6 py-4 text-sm text-[var(--text-muted)]">
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-[var(--text-main)]">{new Date(t.transaction_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+                                            <span className="text-[10px]">{new Date(t.transaction_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                    </td>
+                                    <td className="py-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${t.operation_type === 'ENCAISSEMENT' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/30' : 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20 dark:border-rose-900/30'}`}>
+                                            {t.operation_type === 'ENCAISSEMENT' ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ArrowTrendingDownIcon className="w-3 h-3" />}
+                                            {t.operation_type === 'ENCAISSEMENT' ? 'Envoi' : 'Retrait'}
+                                        </span>
+                                    </td>
+                                    <td className="py-4">
+                                        <span className="text-sm font-medium text-[var(--text-main)]">{t.mm_platforms?.name}</span>
+                                    </td>
+                                    <td className="py-4 text-right font-bold text-[var(--text-main)]">
+                                        {formatCurrency(t.amount)}
+                                    </td>
+                                    <td className="pr-6 py-4 text-center">
+                                        <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold text-[var(--success)]">
+                                            <CheckCircleIcon className="w-3 h-3" /> {t.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
+            {/* Opening Modal */}
             {showOpeningModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-sm">
-                    <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-xl shadow-premium border border-zinc-200 dark:border-zinc-800 p-10">
-                        <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">Ouverture de Session</h2>
-                        <p className="text-zinc-500 text-sm mb-8">Vériﬁez vos stocks physiques pour activer le service.</p>
-                        <div className="grid grid-cols-4 gap-4 mb-8">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="w-full max-w-2xl bg-[var(--bg-card)] rounded-xl shadow-2xl p-8 border border-[var(--border)] animate-enter">
+                        <h2 className="text-xl font-bold text-[var(--text-main)] font-serif-display mb-1">Ouverture de Caisse</h2>
+                        <p className="text-sm text-[var(--text-muted)] mb-6">Comptez vos espèces pour initialiser la session.</p>
+
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-6">
                             {Object.keys(cashBreakdown).map(k => (
                                 <div key={k} className="space-y-1">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">{k.replace(/[bc]/, '')} F</label>
-                                    <input type="number" className="input-premium !text-center" value={cashBreakdown[k]} onChange={e => setCashBreakdown({ ...cashBreakdown, [k]: e.target.value })} />
+                                    <label className="text-[10px] font-bold text-[var(--text-muted)] ml-1">{k.replace(/[bc]/, '')} F</label>
+                                    <input
+                                        type="number"
+                                        className="input-modern w-full !text-center !px-1"
+                                        value={cashBreakdown[k]}
+                                        onChange={e => setCashBreakdown({ ...cashBreakdown, [k]: e.target.value })}
+                                        placeholder="0"
+                                    />
                                 </div>
                             ))}
                         </div>
-                        <button onClick={handleOpenDay} className="btn-vibrant w-full !py-4 !uppercase !tracking-widest">Activer la Caisse</button>
+                        <div className="flex justify-end border-t border-[var(--border)] pt-4">
+                            <div className="mr-auto">
+                                <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">Total</span>
+                                <p className="text-xl font-bold text-[var(--text-main)]">{formatCurrency(calculateTotal(cashBreakdown))}</p>
+                            </div>
+                            <button onClick={handleOpenDay} className="btn-primary px-8">Activer la Caisse</button>
+                        </div>
                     </div>
                 </div>
             )}
 
+            {/* Transaction Modal */}
             {showTransactionModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-sm">
-                    <div className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-xl shadow-premium border border-zinc-200 dark:border-zinc-800 p-10">
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Opération Rapide</h2>
-                            <button onClick={() => setShowTransactionModal(false)} className="text-zinc-400 hover:text-zinc-950"><XMarkIcon className="w-5 h-5" /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="w-full max-w-xl bg-[var(--bg-card)] rounded-xl shadow-2xl p-0 border border-[var(--border)] animate-enter overflow-hidden">
+                        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-subtle)]">
+                            <h2 className="text-lg font-bold text-[var(--text-main)] font-serif-display">Nouvelle Opération</h2>
+                            <button onClick={() => setShowTransactionModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]"><XMarkIcon className="w-5 h-5" /></button>
                         </div>
-                        <div className="flex gap-4 mb-8">
-                            {platforms.map(p => (
-                                <button key={p.id} onClick={() => setSelectedPlatform(p.id)} className={`flex-1 p-3 rounded-xl border-2 transition-all text-xs font-bold uppercase tracking-widest ${selectedPlatform === p.id ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-100 bg-zinc-50 text-zinc-400'}`}>{p.name}</button>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-4 gap-4 mb-10">
-                            {Object.keys(transactionCash).map(k => (
-                                <div key={k} className="space-y-1">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">{k.replace(/[bc]/, '')} F</label>
-                                    <input type="number" className="input-premium !text-center" value={transactionCash[k]} onChange={e => setTransactionCash({ ...transactionCash, [k]: e.target.value })} />
+
+                        <div className="p-6 space-y-6">
+                            {/* Type Selection */}
+                            <div className="flex p-1 bg-[var(--bg-subtle)] rounded-lg">
+                                <button
+                                    onClick={() => setTransactionType('ENCAISSEMENT')}
+                                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${transactionType === 'ENCAISSEMENT' ? 'bg-white text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    Envoi (Cash In)
+                                </button>
+                                <button
+                                    onClick={() => setTransactionType('DECAISSEMENT')}
+                                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${transactionType === 'DECAISSEMENT' ? 'bg-white text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    Retrait (Cash Out)
+                                </button>
+                            </div>
+
+                            {/* Platform Selection */}
+                            <div>
+                                <label className="text-xs font-semibold text-[var(--text-main)] mb-2 block">Opérateur</label>
+                                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-3">
+                                    {platforms.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => setSelectedPlatform(p.id)}
+                                            className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${selectedPlatform === p.id ? 'border-[var(--primary)] bg-[var(--primary)]/5 text-[var(--primary)]' : 'border-[var(--border)] hover:border-[var(--border-hover)] text-[var(--text-muted)]'}`}
+                                        >
+                                            <DevicePhoneMobileIcon className="w-5 h-5" />
+                                            <span className="text-[10px] font-bold uppercase">{p.name}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* Cash Breakdown Input */}
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-xs font-semibold text-[var(--text-main)]">Détail des Espèces</label>
+                                    <span className="text-xs font-bold text-[var(--text-main)] bg-[var(--bg-subtle)] px-2 py-1 rounded">Total: {formatCurrency(currentTransactionTotal)}</span>
+                                </div>
+                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                                    {Object.keys(transactionCash).map(k => (
+                                        <div key={k} className="space-y-1">
+                                            <label className="text-[9px] font-bold text-[var(--text-muted)] ml-1">{k.replace(/[bc]/, '')}</label>
+                                            <input
+                                                type="number"
+                                                className={`input-modern w-full !text-center !px-1 !text-xs !h-8 ${transactionCash[k] ? 'border-[var(--primary)] bg-[var(--primary)]/5' : ''}`}
+                                                value={transactionCash[k]}
+                                                onChange={e => setTransactionCash({ ...transactionCash, [k]: e.target.value })}
+                                                placeholder="-"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => handleCreateTransaction('ENCAISSEMENT')} className="flex-1 py-4 bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest">Encaisser</button>
-                            <button onClick={() => handleCreateTransaction('DECAISSEMENT')} className="flex-1 py-4 bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest">Décaisser</button>
+
+                        <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex justify-end">
+                            <button
+                                onClick={handleCreateTransaction}
+                                disabled={!currentTransactionTotal || !selectedPlatform}
+                                className="btn-primary"
+                            >
+                                Valider {transactionType === 'ENCAISSEMENT' ? "l'Envoi" : 'le Retrait'}
+                            </button>
                         </div>
                     </div>
                 </div>

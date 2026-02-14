@@ -6,9 +6,9 @@ import autoTable from 'jspdf-autotable';
 import {
     ClipboardDocumentListIcon,
     BanknotesIcon,
-    CalendarDaysIcon,
     ArrowPathIcon,
-    ArrowDownTrayIcon
+    ArrowDownTrayIcon,
+    CalendarIcon
 } from '@heroicons/react/24/outline';
 
 const formatCurrency = (val) => new Intl.NumberFormat('fr-FR').format(Math.round(val || 0)) + ' F';
@@ -28,22 +28,34 @@ export default function Reports() {
             const doc = new jsPDF();
             const shopName = user?.shop_settings?.shop_name || 'Wakeur Sokhna';
 
-            doc.setFillColor(24, 24, 27); // zinc-900
+            // Modern Header
+            doc.setFillColor(15, 23, 42); // slate-900
             doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(20);
-            doc.text(shopName.toUpperCase(), 14, 22);
-            doc.setFontSize(12);
-            doc.text('INVENTAIRE ET VALORISATION DES STOCKS', 14, 32);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text(shopName.toUpperCase(), 14, 20);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('INVENTAIRE ET VALORISATION DES STOCKS', 14, 28);
+            doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 34);
 
             const tableData = products.map(p => [p.name, p.quantity || 0, formatCurrency(p.unit_price), formatCurrency((p.quantity || 0) * (p.unit_price || 0))]);
             autoTable(doc, {
                 startY: 50,
                 head: [['Produit', 'Quantité', 'Prix Unitaire', 'Valeur Stock']],
                 body: tableData,
-                theme: 'striped',
-                headStyles: { fillColor: [39, 39, 42] }, // zinc-800
-                columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' } }
+                theme: 'grid',
+                headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                columnStyles: {
+                    0: { fontStyle: 'bold' },
+                    1: { halign: 'center' },
+                    2: { halign: 'right' },
+                    3: { halign: 'right', fontStyle: 'bold' }
+                },
+                styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 }
             });
             doc.save(`Inventaire_${new Date().toISOString().split('T')[0]}.pdf`);
         } finally { setLoading(false); }
@@ -54,77 +66,106 @@ export default function Reports() {
         try {
             const { data: transactions } = await supabase.from('mm_transactions').select('*, mm_platforms(name)').gte('transaction_date', dateRange.start).lte('transaction_date', `${dateRange.end}T23:59:59`).order('transaction_date', { ascending: false });
             const doc = new jsPDF();
-            doc.setFillColor(24, 24, 27); // zinc-900
+            const shopName = user?.shop_settings?.shop_name || 'Wakeur Sokhna';
+
+            // Modern Header
+            doc.setFillColor(15, 23, 42); // slate-900
             doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(20);
-            doc.text('RAPPORT D\'OPÉRATIONS', 14, 22);
-            doc.setFontSize(12);
-            doc.text(`MOBILE MONEY : ${dateRange.start} AU ${dateRange.end}`, 14, 32);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text(shopName.toUpperCase(), 14, 20);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('RAPPORT OPÉRATIONS MOBILE MONEY', 14, 28);
+            doc.text(`Période: ${new Date(dateRange.start).toLocaleDateString()} au ${new Date(dateRange.end).toLocaleDateString()}`, 14, 34);
+
 
             const tableRows = transactions.map(t => [new Date(t.transaction_date).toLocaleDateString(), t.mm_platforms?.name || 'N/A', t.operation_type, formatCurrency(t.amount)]);
             autoTable(doc, {
                 startY: 50,
                 head: [['Date', 'Opérateur', 'Type', 'Montant']],
                 body: tableRows,
-                theme: 'striped',
-                headStyles: { fillColor: [39, 39, 42] }, // zinc-800
-                columnStyles: { 3: { halign: 'right' } }
+                theme: 'grid',
+                headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } },
+                styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 }
             });
             doc.save(`Rapport_MM_${dateRange.start}.pdf`);
         } finally { setLoading(false); }
     };
 
     return (
-        <div className="space-y-12 animate-fade-in">
+        <div className="space-y-8 animate-enter">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Rapports & Archives</h1>
-                    <p className="text-zinc-500 font-medium mt-1">Génération de documents PDF pour votre gestion.</p>
+                    <h1 className="text-2xl font-serif-display font-bold text-[var(--text-main)]">Rapports & Archives</h1>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">Exportation de documents et analyses.</p>
                 </div>
             </div>
 
-            <div className="premium-card p-10 shadow-2xl shadow-teal-900/5">
-                <div className="space-y-2 max-w-sm">
-                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 ml-1">Période d&apos;analyse</label>
-                    <div className="flex gap-4">
-                        <input type="date" className="input-premium font-bold" value={dateRange.start} onChange={e => setDateRange({ ...dateRange, start: e.target.value })} />
-                        <input type="date" className="input-premium font-bold" value={dateRange.end} onChange={e => setDateRange({ ...dateRange, end: e.target.value })} />
+            <div className="card-modern p-6 max-w-lg">
+                <div className="flex items-center gap-2 mb-4">
+                    <CalendarIcon className="w-5 h-5 text-[var(--primary)]" />
+                    <h3 className="text-sm font-bold text-[var(--text-main)]">Période d'analyse</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium text-[var(--text-muted)]">Du</label>
+                        <input
+                            type="date"
+                            className="input-modern w-full"
+                            value={dateRange.start}
+                            onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium text-[var(--text-muted)]">Au</label>
+                        <input
+                            type="date"
+                            className="input-modern w-full"
+                            value={dateRange.end}
+                            onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
+                        />
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="premium-card group hover:border-teal-500/30 transition-all duration-500 shadow-2xl shadow-teal-900/5 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
-                    <div className="p-10 border-b border-zinc-100 dark:border-zinc-800 relative z-10">
-                        <div className="h-14 w-14 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-2xl flex items-center justify-center mb-8 font-black border border-teal-100 dark:border-teal-800 group-hover:rotate-6 transition-transform">
-                            <ClipboardDocumentListIcon className="w-7 h-7" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="card-modern p-0 overflow-hidden flex flex-col group hover:shadow-lg transition-shadow">
+                    <div className="p-6 flex-1">
+                        <div className="w-12 h-12 rounded-xl bg-[var(--bg-subtle)] flex items-center justify-center text-[var(--primary)] mb-4 group-hover:bg-[var(--primary)] group-hover:text-white transition-colors">
+                            <ClipboardDocumentListIcon className="w-6 h-6" />
                         </div>
-                        <h3 className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Inventaire & Stock</h3>
-                        <p className="mt-3 text-zinc-500 font-medium leading-relaxed">État des lieux complet des produits et valorisation marchande en temps réel.</p>
+                        <h3 className="text-lg font-bold text-[var(--text-main)] mb-2">Inventaire & Stock</h3>
+                        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                            Générez un état complet de vos stocks actuels avec valorisation marchande. Utile pour les points de fin de mois.
+                        </p>
                     </div>
-                    <div className="p-8 relative z-10">
-                        <button onClick={generateInventoryReport} disabled={loading} className="btn-vibrant w-full !py-5 !text-[10px] !uppercase !tracking-[0.3em]">
-                            {loading ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <ArrowDownTrayIcon className="w-5 h-5" />}
-                            Exporter l&apos;Inventaire
+                    <div className="p-4 bg-[var(--bg-subtle)] border-t border-[var(--border)]">
+                        <button onClick={generateInventoryReport} disabled={loading} className="btn-secondary w-full justify-center">
+                            {loading ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <ArrowDownTrayIcon className="w-4 h-4" />}
+                            Exporter en PDF
                         </button>
                     </div>
                 </div>
 
-                <div className="premium-card group hover:border-emerald-500/30 transition-all duration-500 shadow-2xl shadow-emerald-900/5 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
-                    <div className="p-10 border-b border-zinc-100 dark:border-zinc-800 relative z-10">
-                        <div className="h-14 w-14 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-2xl flex items-center justify-center mb-8 font-black border border-emerald-100 dark:border-emerald-800 group-hover:rotate-6 transition-transform">
-                            <BanknotesIcon className="w-7 h-7" />
+                <div className="card-modern p-0 overflow-hidden flex flex-col group hover:shadow-lg transition-shadow">
+                    <div className="p-6 flex-1">
+                        <div className="w-12 h-12 rounded-xl bg-[var(--bg-subtle)] flex items-center justify-center text-[var(--success)] mb-4 group-hover:bg-[var(--success)] group-hover:text-white transition-colors">
+                            <BanknotesIcon className="w-6 h-6" />
                         </div>
-                        <h3 className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Mobile Money</h3>
-                        <p className="mt-3 text-zinc-500 font-medium leading-relaxed">Analyse détaillée des flux digitaux et transactions financières opérées.</p>
+                        <h3 className="text-lg font-bold text-[var(--text-main)] mb-2">Flux Mobile Money</h3>
+                        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                            Exportez le journal détaillé des transactions (dépôts/retraits) sur la période sélectionnée pour réconciliation.
+                        </p>
                     </div>
-                    <div className="p-8 relative z-10">
-                        <button onClick={generateMobileMoneyReport} disabled={loading} className="btn-vibrant w-full !py-5 !text-[10px] !uppercase !tracking-[0.3em] !from-emerald-600 !to-emerald-700 shadow-emerald-600/20">
-                            {loading ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <ArrowDownTrayIcon className="w-5 h-5" />}
-                            Exporter le Rapport MM
+                    <div className="p-4 bg-[var(--bg-subtle)] border-t border-[var(--border)]">
+                        <button onClick={generateMobileMoneyReport} disabled={loading} className="btn-secondary w-full justify-center hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200">
+                            {loading ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <ArrowDownTrayIcon className="w-4 h-4" />}
+                            Exporter en PDF
                         </button>
                     </div>
                 </div>

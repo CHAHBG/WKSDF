@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Bars3Icon, MoonIcon, SunIcon, BellIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, MoonIcon, SunIcon, BellIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -21,7 +21,8 @@ export default function Layout() {
     const location = useLocation();
     const { shopSettings, userProfile } = useAuth();
     const { isDark, toggleTheme } = useTheme();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile toggle
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop collapse
 
     const pageLabel = useMemo(() => {
         return PAGE_LABELS[location.pathname] || 'Tableau de bord';
@@ -29,7 +30,7 @@ export default function Layout() {
 
     const todayLabel = useMemo(() => {
         return new Intl.DateTimeFormat('fr-FR', {
-            day: '2-digit',
+            day: 'numeric',
             month: 'long',
             year: 'numeric',
         }).format(new Date());
@@ -39,61 +40,73 @@ export default function Layout() {
     const initials = userProfile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'US';
 
     return (
-        <div className="min-h-screen bg-teal-50/20 dark:bg-zinc-950 transition-colors duration-500">
-            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <div className="min-h-screen bg-[var(--bg-subtle)] dark:bg-[var(--bg-app)] transition-colors duration-300 font-sans">
+            {/* Sidebar */}
+            <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                isCollapsed={isSidebarCollapsed}
+                toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            />
 
-            <main className="min-h-screen lg:ml-72 transition-all">
-                {/* Header Section - Joyful Glassmorphism */}
-                <header className="sticky top-0 z-30 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-800/50">
-                    <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-8 lg:px-12">
+            <main className={`min-h-screen transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+                {/* Header - Minimal Sticky */}
+                <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-[var(--border)]">
+                    <div className="flex h-16 items-center justify-between px-6 lg:px-8">
 
-                        {/* Left Side: Mobile Menu & Page Title */}
-                        <div className="flex items-center gap-6">
+                        {/* Mobile Menu & Title */}
+                        <div className="flex items-center gap-4">
                             <button
                                 type="button"
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 shadow-sm border border-zinc-200 dark:border-zinc-800 hover:scale-105 transition-transform lg:hidden"
+                                className="lg:hidden p-2 text-[var(--text-muted)] hover:text-[var(--text-main)]"
                             >
                                 <Bars3Icon className="h-6 w-6" />
                             </button>
-                            <div className="hidden sm:block">
-                                <h1 className="text-lg font-black tracking-tight text-zinc-900 dark:text-white uppercase tracking-[0.1em]">{pageLabel}</h1>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="h-1 w-1 rounded-full bg-teal-500 animate-pulse"></span>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-teal-600 dark:text-teal-400">{shopName}</p>
-                                </div>
+
+                            <div className="flex flex-col">
+                                <h1 className="text-lg font-serif-display font-bold text-[var(--text-main)] tracking-tight">
+                                    {pageLabel}
+                                </h1>
+                                <span className="text-[11px] text-[var(--text-muted)] hidden sm:block">
+                                    {todayLabel} • {shopName}
+                                </span>
                             </div>
                         </div>
 
-                        {/* Right Side: Tools & Profile */}
-                        <div className="flex items-center gap-6">
-                            {/* Date Badge - Muted Teal */}
-                            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-teal-50/50 dark:bg-teal-900/10 rounded-2xl text-[11px] font-black text-teal-700 dark:text-teal-400 uppercase tracking-widest border border-teal-100/50 dark:border-teal-800/50">
-                                {todayLabel}
+                        {/* Right Actions */}
+                        <div className="flex items-center gap-3 sm:gap-6">
+
+                            {/* Search (Visual Only for now) */}
+                            <div className="hidden md:flex items-center relative group">
+                                <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 text-slate-400 group-focus-within:text-slate-600" />
+                                <input
+                                    type="text"
+                                    placeholder="Rechercher..."
+                                    className="pl-9 pr-4 py-1.5 text-sm bg-[var(--bg-subtle)] border border-transparent focus:border-[var(--border)] focus:bg-white rounded-lg transition-all outline-none w-48 focus:w-64"
+                                />
                             </div>
 
-                            {/* Actions */}
+                            <div className="h-6 w-px bg-[var(--border)] hidden sm:block"></div>
+
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={toggleTheme}
-                                    className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:text-teal-600 transition-all hover:scale-110"
+                                    className="p-2 rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                                 >
                                     {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
                                 </button>
-                                <button className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:text-teal-600 transition-all hover:scale-110">
+                                <button className="relative p-2 rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
                                     <BellIcon className="h-5 w-5" />
-                                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-orange-500 border-2 border-white dark:border-zinc-900"></span>
+                                    <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[var(--danger)]"></span>
                                 </button>
                             </div>
 
-                            {/* User Profile - Joyful Matte */}
-                            <div className="flex items-center gap-4 pl-4 border-l border-zinc-100 dark:border-zinc-800">
-                                <div className="hidden text-right lg:block">
-                                    <p className="text-xs font-black text-zinc-900 dark:text-white">
-                                        {userProfile?.full_name?.split(' ')[0] || 'User'}
-                                    </p>
-                                </div>
-                                <div className="h-10 w-10 rounded-2xl bg-teal-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-teal-600/30 border-2 border-white dark:border-zinc-950 transition-transform hover:rotate-3">
+                            <div className="flex items-center gap-3 pl-2">
+                                <span className="hidden md:block text-sm font-medium text-[var(--text-main)]">
+                                    {userProfile?.full_name?.split(' ')[0]}
+                                </span>
+                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                                     {initials}
                                 </div>
                             </div>
@@ -101,8 +114,8 @@ export default function Layout() {
                     </div>
                 </header>
 
-                {/* Main Content Area */}
-                <div className="mx-auto w-full max-w-7xl p-8 lg:p-12 animate-fade-in">
+                {/* Page Content */}
+                <div className="p-6 lg:p-8 animate-enter">
                     <Outlet />
                 </div>
             </main>

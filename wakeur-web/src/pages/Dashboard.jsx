@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -13,16 +13,16 @@ import {
     Tooltip,
     Legend,
     ArcElement,
+    Filler
 } from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import {
     BanknotesIcon,
     CubeIcon,
     ExclamationTriangleIcon,
     ShoppingCartIcon,
-    ArrowTrendingUpIcon,
-    ArrowTrendingDownIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
+    ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 
 ChartJS.register(
@@ -34,7 +34,8 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    ArcElement
+    ArcElement,
+    Filler
 );
 
 const formatCurrency = (val) => new Intl.NumberFormat('fr-FR').format(Math.round(val || 0)) + ' F';
@@ -50,17 +51,16 @@ export default function Dashboard() {
         thisWeekSales: 0,
         totalStockValue: 0,
     });
-    const [categoryBreakdown, setCategoryBreakdown] = useState({ labels: [], values: [] });
     const [salesTrend, setSalesTrend] = useState({ labels: [], values: [] });
     const [topProducts, setTopProducts] = useState([]);
-    const [lowStockProducts, setLowStockProducts] = useState([]);
+    const [recentSales, setRecentSales] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
         try {
             const [productsRes, salesRes, saleItemsRes] = await Promise.all([
                 supabase.from('products').select('*'),
-                supabase.from('sales').select('*').order('created_at', { ascending: false }),
+                supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(50),
                 supabase.from('sale_items').select('*'),
             ]);
 
@@ -84,11 +84,11 @@ export default function Dashboard() {
                 lowStock: lowStockCount,
                 totalRevenue,
                 todaySales,
-                thisWeekSales: 0, // Simplified for performance
+                thisWeekSales: 0,
                 totalStockValue,
             });
 
-            // Trend
+            // Sales Trend (Last 7 Days)
             const last7Days = [...Array(7)].map((_, i) => {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
@@ -119,11 +119,7 @@ export default function Dashboard() {
                     .map(([name, revenue]) => ({ name, revenue }))
             );
 
-            setLowStockProducts(
-                products.filter(p => Number(p.quantity) <= (p.alert_threshold || 5))
-                    .sort((a, b) => Number(a.quantity) - Number(b.quantity))
-                    .slice(0, 5)
-            );
+            setRecentSales(sales.slice(0, 5));
 
         } catch (err) {
             console.error(err);
@@ -142,166 +138,189 @@ export default function Dashboard() {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: isDark ? '#161b22' : '#fff',
-                titleColor: isDark ? '#f0f6fc' : '#0f172a',
-                bodyColor: isDark ? '#8b949e' : '#64748b',
-                borderColor: isDark ? '#30363d' : '#e2e8e8',
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                titleColor: isDark ? '#f8fafc' : '#0f172a',
+                bodyColor: isDark ? '#94a3b8' : '#64748b',
+                borderColor: isDark ? '#334155' : '#e2e8f0',
                 borderWidth: 1,
-                padding: 12,
-                cornerRadius: 12,
-                titleFont: { weight: 'bold' }
+                padding: 10,
+                displayColors: false,
+                callbacks: {
+                    label: (ctx) => formatCurrency(ctx.raw)
+                }
             }
         },
         scales: {
-            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } } },
-            y: { grid: { color: isDark ? '#30363d' : '#f0f9f9', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } } }
-        }
+            x: {
+                grid: { display: false },
+                ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
+            },
+            y: {
+                grid: { color: isDark ? '#334155' : '#f1f5f9', borderDash: [4, 4] },
+                ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 }, callback: (val) => val >= 1000 ? val / 1000 + 'k' : val },
+                border: { display: false }
+            }
+        },
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
     };
 
     const trendData = {
         labels: salesTrend.labels,
         datasets: [{
             data: salesTrend.values,
-            borderColor: '#0d9488',
-            backgroundColor: 'rgba(13, 148, 136, 0.05)',
+            borderColor: '#0f172a', // Navy
+            backgroundColor: (context) => {
+                const ctx = context.chart.ctx;
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(15, 23, 42, 0.1)');
+                gradient.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                return gradient;
+            },
             fill: true,
             tension: 0.4,
-            borderWidth: 3,
-            pointRadius: 4,
-            pointBackgroundColor: '#0d9488',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 6
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#0f172a',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
         }]
     };
 
+    if (isDark) {
+        trendData.datasets[0].borderColor = '#38bdf8'; // Sky blue in dark mode
+        trendData.datasets[0].pointHoverBackgroundColor = '#38bdf8';
+    }
+
     return (
-        <div className="space-y-12 animate-fade-in">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-8 animate-enter">
+            {/* Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Vue d&apos;ensemble</h1>
-                    <p className="text-zinc-500 font-medium mt-1">Gérez votre activité avec une touche de sérénité.</p>
+                    <h2 className="text-2xl font-serif-display font-bold text-[var(--text-main)]">Vue d'ensemble</h2>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">Activité récente et performances.</p>
                 </div>
                 <button
                     onClick={fetchData}
-                    className="btn-ghost"
+                    className="btn-secondary text-xs"
                 >
-                    <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    <ArrowPathIcon className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                     Actualiser
                 </button>
             </div>
 
             {/* Metric Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Revenu Total', value: formatCurrency(stats.totalRevenue), icon: BanknotesIcon, color: 'teal' },
-                    { label: 'Ventes du jour', value: formatCurrency(stats.todaySales), icon: ShoppingCartIcon, color: 'emerald' },
-                    { label: 'Valeur de stock', value: formatCurrency(stats.totalStockValue), icon: CubeIcon, color: 'orange' },
-                    { label: 'Alerte Stock', value: stats.lowStock, icon: ExclamationTriangleIcon, color: stats.lowStock > 0 ? 'rose' : 'teal' },
+                    { label: 'Revenu Total', value: formatCurrency(stats.totalRevenue), icon: BanknotesIcon, trend: '+12%', trendUp: true },
+                    { label: 'Ventes du jour', value: formatCurrency(stats.todaySales), icon: ShoppingCartIcon, trend: 'En direct', trendUp: true },
+                    { label: 'Valeur Stock', value: formatCurrency(stats.totalStockValue), icon: CubeIcon, trend: null },
+                    { label: 'Alertes', value: stats.lowStock, icon: ExclamationTriangleIcon, trend: stats.lowStock > 0 ? 'Action requise' : 'Stable', trendUp: stats.lowStock === 0 },
                 ].map((m, i) => (
-                    <div key={i} className="metric-card-joy group overflow-hidden relative">
-                        <div className={`absolute top-0 right-0 w-32 h-32 bg-${m.color}-500/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110`}></div>
-                        <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className={`p-3 rounded-2xl bg-${m.color}-50 dark:bg-${m.color}-900/20 text-${m.color}-600 dark:text-${m.color}-400`}>
-                                    <m.icon className="w-6 h-6" />
-                                </div>
-                                {m.label === 'Ventes du jour' && (
-                                    <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-widest">
-                                        En direct
-                                    </span>
-                                )}
+                    <div key={i} className="card-modern p-5 flex flex-col justify-between h-32 relative group">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{m.label}</p>
+                                <h3 className="text-2xl font-bold text-[var(--text-main)] mt-1 tracking-tight">{m.value}</h3>
                             </div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 mb-1">{m.label}</p>
-                            <div className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter">{m.value}</div>
+                            <div className="p-2 rounded-lg bg-[var(--bg-subtle)] text-[var(--text-muted)] group-hover:bg-white group-hover:shadow-sm transition-all">
+                                <m.icon className="w-5 h-5" />
+                            </div>
                         </div>
+                        {m.trend && (
+                            <div className={`text-xs font-medium flex items-center gap-1 ${m.trendUp ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
+                                {m.trendUp ? <ArrowTrendingUpIcon className="w-3 h-3" /> : <ExclamationTriangleIcon className="w-3 h-3" />}
+                                {m.trend}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-                <div className="xl:col-span-2 p-10 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-[2.5rem] shadow-xl shadow-teal-900/5">
-                    <div className="flex items-center justify-between mb-10">
-                        <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-600">Performance Commerciale (7j)</h3>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                                <ArrowTrendingUpIcon className="w-3 h-3" /> +4.2%
-                            </div>
-                        </div>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Chart Section */}
+                <div className="lg:col-span-2 card-modern p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-bold text-[var(--text-main)]">Performance des Ventes</h3>
+                        <select className="text-xs border border-[var(--border)] rounded-lg px-2 py-1 bg-transparent outline-none">
+                            <option>7 derniers jours</option>
+                            <option>Ce mois</option>
+                        </select>
                     </div>
-                    <div className="h-80">
+                    <div className="h-64 w-full">
                         <Line data={trendData} options={chartOptions} />
                     </div>
                 </div>
 
-                <div className="p-10 bg-teal-900 dark:bg-zinc-900 text-white rounded-[2.5rem] shadow-2xl shadow-teal-900/40 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-teal-800 to-teal-950 opacity-90"></div>
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="p-2.5 bg-white/10 rounded-xl">
-                                    <ExclamationTriangleIcon className="w-5 h-5 text-orange-400" />
-                                </div>
-                                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-100">Alertes Stock</h3>
-                            </div>
-
-                            {lowStockProducts.length > 0 ? (
-                                <div className="space-y-5">
-                                    {lowStockProducts.map((p, i) => (
-                                        <div key={i} className="flex items-center justify-between group/item p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all cursor-default">
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-black truncate">{p.name}</p>
-                                                <p className="text-[10px] text-teal-300 font-bold uppercase tracking-wider">{p.quantity} en stock</p>
-                                            </div>
-                                            <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
-                                                <span className="text-[10px] font-black text-orange-400">!</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-10 opacity-50">
-                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                        <CubeIcon className="w-6 h-6 text-teal-200" />
+                {/* Top Products / Sidebar Widget */}
+                <div className="card-modern p-0 flex flex-col">
+                    <div className="p-5 border-b border-[var(--border-subtle)]">
+                        <h3 className="font-bold text-[var(--text-main)]">Produits Populaires</h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2">
+                        {topProducts.map((p, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 hover:bg-[var(--bg-subtle)] rounded-xl transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-[var(--bg-subtle)] flex items-center justify-center text-xs font-bold text-[var(--text-muted)] group-hover:bg-white group-hover:shadow-sm">
+                                        {i + 1}
                                     </div>
-                                    <p className="text-sm font-bold italic">Tout est en ordre</p>
+                                    <span className="text-sm font-medium text-[var(--text-main)] truncate max-w-[120px]">{p.name}</span>
                                 </div>
-                            )}
-                        </div>
-                        <button className="mt-10 w-full py-4 bg-white text-teal-950 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-teal-950/20">
-                            Gérer le stock
-                        </button>
+                                <span className="text-xs font-bold text-[var(--text-main)]">{formatCurrency(p.revenue)}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)]/50">
+                        <button className="w-full text-center text-xs font-bold text-[var(--primary)] hover:underline">Voir tout l'inventaire</button>
                     </div>
                 </div>
             </div>
 
-            {/* Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-2 p-10 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-[2.5rem]">
-                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-teal-600 mb-8">Top Ventes Produits</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {topProducts.map((p, i) => (
-                            <div key={i} className="flex items-center justify-between p-5 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl group hover:bg-teal-50 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-700 flex items-center justify-center text-teal-600 font-black shadow-sm group-hover:rotate-6 transition-transform">
-                                        {i + 1}
-                                    </div>
-                                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-200">{p.name}</span>
-                                </div>
-                                <span className="text-sm font-black text-teal-600">{formatCurrency(p.revenue)}</span>
-                            </div>
-                        ))}
-                    </div>
+            {/* Recent Transactions Table */}
+            <div className="card-modern overflow-hidden">
+                <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
+                    <h3 className="font-bold text-[var(--text-main)]">Transactions Récentes</h3>
+                    <button className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--primary)]">Voir tout</button>
                 </div>
-
-                <div className="p-10 bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 rounded-[2.5rem] flex flex-col items-center justify-center group overflow-hidden relative">
-                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-orange-200/20 rounded-full transition-transform group-hover:scale-150"></div>
-                    <div className="relative z-10 text-center">
-                        <div className="text-5xl font-black text-orange-600 mb-3 tracking-tighter">{stats.totalProducts}</div>
-                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">Références Actives</div>
-                        <p className="mt-6 text-xs font-bold text-orange-800/60 dark:text-orange-400/60 max-w-[150px]">L&apos;excellence dans la diversité.</p>
-                    </div>
+                <div className="overflow-x-auto">
+                    <table className="table-modern">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Montant</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {recentSales.map((sale) => (
+                                <tr key={sale.id}>
+                                    <td className="text-[var(--text-muted)]">
+                                        {new Date(sale.created_at).toLocaleDateString()}
+                                    </td>
+                                    <td className="font-medium">{sale.customer_name || 'Client de passage'}</td>
+                                    <td className="font-bold tabular-nums">{formatCurrency(sale.amount)}</td>
+                                    <td>
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                            Complété
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {recentSales.length === 0 && (
+                                <tr>
+                                    <td colSpan="4" className="text-center py-8 text-[var(--text-muted)] italic">
+                                        Aucune transaction récente.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

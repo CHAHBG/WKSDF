@@ -2,60 +2,73 @@
 
 @layer base {
     :root {
-        --font-sans: 'Outfit', 'Inter', -apple-system, sans-serif;
+        --font-sans: 'Inter', 'Poppins', -apple-system, sans-serif;
+        --font-serif: 'Playfair Display', serif;
 
-        /* Matte Joyful Palette - Light Mode */
-        --bg-app: #fcfdfd;
-        /* Very subtle teal tint */
-        --bg-elev: #ffffff;
-        --bg-soft: #f0f9f9;
-        /* Soft teal wash */
+        /* Modern Data-Forward Palette - Light Mode */
+        --bg-app: #ffffff;
+        --bg-subtle: #f8fafc;
+        /* Slate 50 */
+        --bg-card: #ffffff;
+
         --text-main: #0f172a;
+        /* Slate 900 */
         --text-muted: #64748b;
+        /* Slate 500 */
+        --text-inverted: #ffffff;
+
         --border: #e2e8f0;
-        --border-strong: #cbd5e1;
+        /* Slate 200 */
+        --border-subtle: #f1f5f9;
+        /* Slate 100 */
 
-        /* Matte Accents */
-        --primary: #0d9488;
-        /* Matte Teal */
-        --primary-hover: #0f766e;
-        --accent: #c2410c;
-        /* Terracotta */
-        --accent-hover: #9a3412;
-        --secondary: #6366f1;
-        /* Kept for legacy if needed, but avoiding indigo mostly */
-
+        /* Brand Accents */
+        --primary: #0f172a;
+        /* Deep Navy */
+        --primary-light: #1e293b;
+        /* Slate 800 */
+        --accent: #f97316;
+        /* Vibrant Orange */
         --success: #10b981;
-        --warning: #f59e0b;
+        /* Warm Emerald */
         --danger: #ef4444;
+        /* Red */
+        --c-blue: #3b82f6;
+        /* Secondary Blue */
 
-        --focus-ring: rgba(13, 148, 136, 0.15);
+        --focus-ring: rgba(15, 23, 42, 0.1);
 
-        /* Soft Tactile Shadows */
-        --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.02);
-        --shadow-md: 0 4px 12px -2px rgba(13, 148, 136, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-        --shadow-lg: 0 12px 24px -6px rgba(13, 148, 136, 0.08), 0 8px 12px -6px rgba(0, 0, 0, 0.04);
-        --shadow-premium: 0 20px 40px -12px rgba(13, 148, 136, 0.12);
+        /* Modern Sophisticated Shadows */
+        --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
     }
 
     html.dark {
-        /* Matte Joyful Palette - Dark Mode */
-        --bg-app: #0d1117;
-        --bg-elev: #161b22;
-        --bg-soft: #21262d;
-        --text-main: #f0f6fc;
-        --text-muted: #8b949e;
-        --border: #30363d;
-        --border-strong: #484f58;
+        /* Dark Mode Synergy */
+        --bg-app: #020617;
+        /* Slate 950 */
+        --bg-subtle: #0f172a;
+        /* Slate 900 */
+        --bg-card: #1e293b;
+        /* Slate 800 */
 
-        --primary: #2dd4bf;
-        /* Brighter Matte Teal */
-        --primary-hover: #5eead4;
+        --text-main: #f8fafc;
+        /* Slate 50 */
+        --text-muted: #94a3b8;
+        /* Slate 400 */
+        --text-inverted: #020617;
+
+        --border: #334155;
+        /* Slate 700 */
+        --border-subtle: #1e293b;
+        /* Slate 800 */
+
+        --primary: #f8fafc;
+        --primary-light: #e2e8f0;
+
         --accent: #fb923c;
-        /* Brighter Terracotta */
-
-        --focus-ring: rgba(45, 212, 191, 0.1);
-        --shadow-premium: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
+        --success: #34d399;
     }
 
     html {
@@ -72,10 +85,10 @@
         color: var(--text-main);
         background: var(--bg-app);
         min-height: 100vh;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.015em;
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
-        transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     h1,
@@ -85,141 +98,145 @@
     h5,
     h6 {
         letter-spacing: -0.025em;
-        line-height: 1.2;
+        line-height: 1.1;
         color: var(--text-main);
         font-weight: 700;
+        font-family: var(--font-serif);
     }
 }
 
 @layer utilities {
-    .shadow-premium {
-        box-shadow: var(--shadow-premium);
+    .shadow-luxury {
+        box-shadow: var(--shadow-float);
+    }
+
+    .shadow-card-modern {
+        box-shadow: var(--shadow-card);
+    }
+
+    .font-serif-display {
+        font-family: var(--font-serif);
     }
 }
 
 @layer components {
 
-    /* Rounded & Joyful Surfaces */
-    .premium-card {
-        background: var(--bg-elev);
-        border: 1px solid var(--border);
-        border-radius: 1.5rem;
-        /* rounded-3xl equivalent for joy */
-        box-shadow: var(--shadow-sm);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
+    /* Modern Card */
+    .card-modern {
+        @apply bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl overflow-hidden transition-all duration-300;
+        box-shadow: var(--shadow-card);
     }
 
-    .premium-card:hover {
-        transform: translateY(-2px);
-        border-color: var(--primary);
-        box-shadow: var(--shadow-lg);
+    .card-modern:hover {
+        @apply border-[var(--border)] transform -translate-y-[1px];
+        box-shadow: var(--shadow-float);
     }
 
-    /* Matte Buttons with Softest Gradients */
-    .btn-vibrant {
-        @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-        color: white;
-        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+    /* Buttons */
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-sm;
+        background: var(--primary);
+        color: var(--text-inverted);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
 
-    .btn-vibrant:hover {
-        filter: brightness(1.1);
-        box-shadow: 0 8px 16px rgba(13, 148, 136, 0.3);
+    .btn-primary:hover {
+        background: var(--primary-light);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
-    .btn-accent {
-        @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 active:scale-95;
-        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-        color: white;
-        box-shadow: 0 4px 12px rgba(194, 65, 12, 0.2);
+    html.dark .btn-primary {
+        color: #0f172a;
     }
 
-    .btn-ghost {
-        @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300;
-        background: var(--bg-soft);
-        color: var(--primary);
-        border: 1px solid transparent;
-    }
-
-    .btn-ghost:hover {
-        background: var(--bg-elev);
-        border-color: var(--primary);
-        transform: translateY(-2px);
-    }
-
-    /* Soft Metric Cards */
-    .metric-card-joy {
-        @apply p-8 rounded-[2.5rem] border border-transparent bg-white dark:bg-zinc-900 transition-all duration-500;
-        box-shadow: var(--shadow-premium);
-        background: linear-gradient(to bottom right, var(--bg-elev), var(--bg-soft));
-    }
-
-    .metric-card-joy:hover {
-        @apply border-teal-500/20 scale-[1.02];
-    }
-
-    /* Rounded Form Fields */
-    .input-premium {
-        @apply w-full px-5 py-3.5 rounded-2xl border border-zinc-200 bg-white/50 backdrop-blur-sm transition-all duration-300 outline-none;
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 active:scale-[0.98] text-sm border border-[var(--border)];
+        background: white;
         color: var(--text-main);
     }
 
-    .input-premium:focus {
-        @apply border-teal-500 ring-4 ring-teal-500/10 bg-white;
+    html.dark .btn-secondary {
+        background: transparent;
+        border-color: var(--border);
     }
 
-    /* Glassmorphic Table */
-    .table-container {
-        @apply overflow-hidden rounded-[2rem] border border-zinc-200 bg-white/80 backdrop-blur-md;
-        box-shadow: var(--shadow-md);
+    .btn-secondary:hover {
+        @apply bg-slate-50 dark:bg-slate-800;
     }
 
-    html.dark .table-container {
-        @apply border-zinc-800 bg-zinc-900/80;
+    .btn-action {
+        @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 active:scale-[0.98] text-sm text-white;
+        background: var(--accent);
     }
 
-    .table-header {
-        @apply bg-teal-50/50 dark:bg-teal-900/20 border-b border-zinc-200 dark:border-zinc-800 px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400;
+    .btn-action:hover {
+        filter: brightness(1.1);
+        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
     }
 
-    .table-row {
-        @apply border-b border-zinc-100 dark:border-zinc-800 last:border-0 hover:bg-teal-50/30 dark:hover:bg-teal-900/10 transition-colors;
+    /* Inputs */
+    .input-modern {
+        @apply w-full px-4 py-2.5 rounded-xl border border-[var(--border)] bg-transparent text-sm font-medium transition-all duration-200 outline-none placeholder:text-[var(--text-muted)];
+        color: var(--text-main);
+        background: var(--bg-card);
+    }
+
+    .input-modern:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--focus-ring);
+    }
+
+    /* Table Styles */
+    .table-modern {
+        @apply w-full text-left text-sm;
+    }
+
+    .table-modern thead {
+        @apply border-b border-[var(--border)] bg-[var(--bg-subtle)];
+    }
+
+    .table-modern th {
+        @apply px-6 py-4 font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[11px];
+    }
+
+    .table-modern td {
+        @apply px-6 py-4 border-b border-[var(--border-subtle)] text-[var(--text-main)];
+    }
+
+    .table-modern tr:last-child td {
+        @apply border-b-0;
+    }
+
+    .table-modern tr:hover td {
+        @apply bg-[var(--bg-subtle)];
     }
 }
 
-/* Animations for "Joy" */
-@keyframes float {
-    0% {
-        transform: translateY(0px);
-    }
-
-    50% {
-        transform: translateY(-10px);
-    }
-
-    100% {
-        transform: translateY(0px);
-    }
-}
-
-.animate-float {
-    animation: float 5s ease-in-out infinite;
-}
-
-.animate-fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
+/* Animations */
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(5px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.animate-enter {
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 {
+    animation-delay: 100ms;
+}
+
+.delay-200 {
+    animation-delay: 200ms;
+}
+
+.delay-300 {
+    animation-delay: 300ms;
 }

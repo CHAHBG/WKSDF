@@ -3,11 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-    ShieldCheckIcon,
     KeyIcon,
     EnvelopeIcon,
     PhoneIcon,
-    ArrowRightIcon
+    ArrowRightIcon,
+    ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 const normalizeEmail = (value) => value.trim().toLowerCase();
@@ -61,152 +61,150 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6 sm:p-12 animate-fade-in">
-            <div className="w-full max-w-5xl flex flex-col lg:flex-row bg-white dark:bg-zinc-900 rounded-[3rem] overflow-hidden shadow-2xl shadow-teal-900/10 border border-zinc-200/50 dark:border-zinc-800/50">
+        <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--bg-app)] animate-enter">
+            <div className="w-full max-w-4xl grid lg:grid-cols-2 bg-[var(--bg-card)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--border)]">
 
-                {/* Visual Side - Matte Joyful */}
-                <div className="lg:w-5/12 p-16 lg:p-20 bg-zinc-950 flex flex-col justify-between text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/10 rounded-full -mr-40 -mt-40 blur-3xl"></div>
+                {/* Visual Side */}
+                <div className="hidden lg:flex flex-col justify-between p-12 bg-[var(--sidebar-bg)] text-white relative overflow-hidden">
                     <div className="relative z-10">
-                        <div className="h-16 w-16 bg-white text-zinc-950 rounded-2xl flex items-center justify-center mb-12 shadow-xl shadow-white/5">
-                            <span className="text-2xl font-black tracking-tighter">W</span>
+                        <div className="h-12 w-12 bg-white/10 rounded-lg flex items-center justify-center mb-8 backdrop-blur-sm border border-white/20">
+                            <span className="text-xl font-serif-display font-bold">W</span>
                         </div>
-                        <h1 className="text-5xl font-black tracking-tighter leading-tight">
-                            Wakeur <span className="text-teal-400">Sokhna</span>.
+                        <h1 className="text-4xl font-serif-display font-bold mb-4 leading-tight">
+                            Wakeur Sokhna.
                         </h1>
-                        <p className="mt-8 text-zinc-400 font-medium text-lg leading-relaxed max-w-xs">
-                            Votre écosystème intelligent pour la gestion de point de vente et mobile money.
+                        <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-xs">
+                            Plateforme de gestion unifiée pour point de vente et services financiers.
                         </p>
                     </div>
-
-                    <div className="relative z-10 space-y-6">
-                        <div className="flex items-center gap-4 text-zinc-500 font-black text-[10px] uppercase tracking-[0.3em]">
-                            <ShieldCheckIcon className="w-5 h-5 text-teal-500" />
-                            <span>Opérations Sécurisées</span>
-                        </div>
+                    <div className="relative z-10 flex items-center gap-3 text-xs font-semibold text-[var(--accent)] tracking-wider uppercase">
+                        <ShieldCheckIcon className="w-4 h-4" />
+                        <span>Accès Sécurisé</span>
                     </div>
+                    {/* Subtle decorative circle */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent)]/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                 </div>
 
                 {/* Form Side */}
-                <div className="lg:w-7/12 p-16 lg:p-20">
-                    <div className="max-w-md mx-auto">
-                        <div className="flex items-center justify-between mb-12">
-                            <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Connexion</h2>
-                            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-2xl">
-                                <button
-                                    onClick={() => setIsAgentLogin(false)}
-                                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isAgentLogin ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-premium' : 'text-zinc-500 hover:text-zinc-700'}`}
-                                >
-                                    Admin
-                                </button>
-                                <button
-                                    onClick={() => setIsAgentLogin(true)}
-                                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isAgentLogin ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-premium' : 'text-zinc-500 hover:text-zinc-700'}`}
-                                >
-                                    Agent
-                                </button>
+                <div className="p-8 lg:p-12 flex flex-col justify-center">
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-bold font-serif-display text-[var(--text-main)] mb-2">Bienvenue</h2>
+                        <p className="text-sm text-[var(--text-muted)]">Connectez-vous pour accéder à votre espace.</p>
+                    </div>
+
+                    <div className="flex bg-[var(--bg-subtle)] p-1 rounded-lg mb-8">
+                        <button
+                            onClick={() => setIsAgentLogin(false)}
+                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${!isAgentLogin ? 'bg-[var(--bg-card)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                        >
+                            Admin
+                        </button>
+                        <button
+                            onClick={() => setIsAgentLogin(true)}
+                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${isAgentLogin ? 'bg-[var(--bg-card)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                        >
+                            Agent
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        {(error || info) && (
+                            <div className={`p-4 rounded-lg text-xs font-medium border ${error ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
+                                {error || info}
                             </div>
-                        </div>
+                        )}
 
-                        <form onSubmit={handleLogin} className="space-y-8">
-                            {(error || info) && (
-                                <div className={`p-5 rounded-2xl text-xs font-black uppercase tracking-widest border animate-shake ${error ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                                    {error || info}
-                                </div>
-                            )}
-
-                            {!isAgentLogin ? (
-                                <>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Identifiant Email</label>
-                                        <div className="relative group">
-                                            <EnvelopeIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
-                                            <input
-                                                type="email"
-                                                required
-                                                className="input-premium pl-14 h-14"
-                                                placeholder="votre@email.com"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Mot de Passe</label>
-                                        <div className="relative group">
-                                            <KeyIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
-                                            <input
-                                                type={showPassword ? 'text' : 'password'}
-                                                required
-                                                className="input-premium pl-14 pr-16 h-14"
-                                                placeholder="••••••••"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-teal-600 transition-colors"
-                                            >
-                                                {showPassword ? 'Cacher' : 'Voir'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Téléphone Agent</label>
-                                        <div className="relative group">
-                                            <PhoneIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-teal-500 transition-colors" />
-                                            <input
-                                                type="tel"
-                                                required
-                                                className="input-premium pl-14 h-14"
-                                                placeholder="77 000 00 00"
-                                                value={phone}
-                                                onChange={(e) => setPhone(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Code PIN Sécurisé</label>
+                        {!isAgentLogin ? (
+                            <>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-[var(--text-main)]">Email</label>
+                                    <div className="relative">
+                                        <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                                         <input
-                                            type="password"
+                                            type="email"
                                             required
-                                            maxLength={4}
-                                            className="input-premium text-center tracking-[0.8em] !text-2xl font-black h-16"
-                                            placeholder="••••"
-                                            value={code}
-                                            onChange={(e) => setCode(e.target.value)}
+                                            className="input-modern pl-10 w-full"
+                                            placeholder="votre@email.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                         />
                                     </div>
-                                </>
-                            )}
+                                </div>
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="btn-vibrant w-full h-16 !text-sm !uppercase !tracking-[0.2em]"
-                            >
-                                {loading ? "Authentification..." : "Accéder à l'espace"}
-                                {!loading && <ArrowRightIcon className="w-5 h-5 ml-2" />}
-                            </button>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-[var(--text-main)]">Mot de Passe</label>
+                                    <div className="relative">
+                                        <KeyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            required
+                                            className="input-modern pl-10 pr-12 w-full"
+                                            placeholder="••••••••"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+                                        >
+                                            {showPassword ? 'Cacher' : 'Voir'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-[var(--text-main)]">Téléphone Agent</label>
+                                    <div className="relative">
+                                        <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                                        <input
+                                            type="tel"
+                                            required
+                                            className="input-modern pl-10 w-full"
+                                            placeholder="77 000 00 00"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-[var(--text-main)]">Code PIN</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        maxLength={4}
+                                        className="input-modern w-full text-center tracking-[0.5em] font-mono text-lg"
+                                        placeholder="••••"
+                                        value={code}
+                                        onChange={(e) => setCode(e.target.value)}
+                                    />
+                                </div>
+                            </>
+                        )}
 
-                            <div className="pt-6 flex flex-col items-center">
-                                {!isAgentLogin && (
-                                    <button
-                                        type="button"
-                                        onClick={() => navigate('/signup')}
-                                        className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-teal-600 transition-colors"
-                                    >
-                                        Ouvrir mon compte commerce
-                                    </button>
-                                )}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2 group"
+                        >
+                            {loading ? "Chargement..." : "Se Connecter"}
+                            {!loading && <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                        </button>
+
+                        {!isAgentLogin && (
+                            <div className="text-center pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/signup')}
+                                    className="text-xs text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+                                >
+                                    Créer un compte commerce
+                                </button>
                             </div>
-                        </form>
-                    </div>
+                        )}
+                    </form>
                 </div>
             </div>
         </div>

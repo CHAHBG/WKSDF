@@ -8,7 +8,7 @@ import {
     ShoppingCartIcon,
     TrashIcon,
     ArrowPathIcon,
-    CubeIcon
+    ArchiveBoxIcon
 } from '@heroicons/react/24/outline';
 
 const formatAmount = (value = 0) =>
@@ -69,6 +69,10 @@ export default function Sales() {
         }));
     };
 
+    const removeFromCart = (productId) => {
+        setCart((prev) => prev.filter((item) => item.id !== productId));
+    };
+
     const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + (Number(item.unit_price) * item.cartQuantity), 0), [cart]);
 
     const filteredProducts = useMemo(() => (
@@ -114,68 +118,77 @@ export default function Sales() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-12rem)] gap-10 animate-fade-in">
-            <div className="flex-1 flex flex-col gap-8 min-w-0">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">Point de Vente</h1>
-                        <p className="text-zinc-500 font-medium mt-1">Sélectionnez les articles pour une transaction sereine.</p>
-                    </div>
-                    <button onClick={fetchData} className="btn-ghost !p-3">
-                        <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                </div>
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] gap-6 animate-enter">
+            {/* Left Column: Products */}
+            <div className="flex-1 flex flex-col gap-6 min-w-0">
 
-                <div className="flex flex-col md:flex-row gap-6">
-                    <div className="relative flex-1">
-                        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher une référence..."
-                            className="input-premium pl-12"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                {/* Header & Filters */}
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-serif-display font-bold text-[var(--text-main)]">Point de Vente</h2>
+                            <p className="text-sm text-[var(--text-muted)]">Sélectionnez les produits à vendre.</p>
+                        </div>
+                        <button onClick={fetchData} className="btn-secondary text-xs">
+                            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
                     </div>
-                    <div className="w-full md:w-64">
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-muted)]" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher un produit..."
+                                className="input-modern pl-10 w-full"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
                         <select
-                            className="input-premium font-bold"
+                            className="input-modern w-full sm:w-48 cursor-pointer"
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
                         >
-                            <option value="all">Toutes Sélections</option>
+                            <option value="all">Toutes les catégories</option>
                             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                         </select>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto scrollbar-hide pr-2">
+                {/* Product Grid */}
+                <div className="flex-1 overflow-y-auto pr-2">
                     {loading ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                             {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                                <div key={i} className="h-48 bg-zinc-100 dark:bg-zinc-800 rounded-[2rem] animate-pulse" />
+                                <div key={i} className="h-40 bg-[var(--bg-subtle)] rounded-xl animate-pulse" />
                             ))}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
                             {filteredProducts.map(p => (
                                 <button
                                     key={p.id}
                                     onClick={() => addToCart(p)}
                                     disabled={p.quantity <= 0}
-                                    className={`group flex flex-col p-6 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-[2rem] text-left hover:scale-[1.03] hover:border-teal-500/30 transition-all duration-300 shadow-premium ${p.quantity <= 0 ? 'opacity-40 grayscale pointer-events-none' : ''}`}
+                                    className={`card-modern p-4 flex flex-col text-left group transition-all duration-200 hover:shadow-md hover:border-[var(--primary)] ${p.quantity <= 0 ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                                 >
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div className="h-10 w-10 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center font-black group-hover:rotate-6 transition-transform">
-                                            <CubeIcon className="w-5 h-5" />
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="p-2 rounded-lg bg-[var(--bg-subtle)] text-[var(--text-muted)] group-hover:bg-[var(--primary)] group-hover:text-white transition-colors">
+                                            <ArchiveBoxIcon className="w-5 h-5" />
                                         </div>
-                                        <span className={`text-[10px] font-black uppercase tracking-widest ${p.quantity <= (p.alert_threshold || 5) ? 'text-rose-500' : 'text-zinc-400'}`}>
-                                            Stock: {p.quantity}
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${p.quantity <= (p.alert_threshold || 5) ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                            Stocks: {p.quantity}
                                         </span>
                                     </div>
-                                    <h3 className="font-black text-zinc-900 dark:text-white text-sm line-clamp-1 mb-1 tracking-tight">{p.name}</h3>
-                                    <p className="text-xs font-bold text-zinc-400 mb-4">{categories.find(c => c.id === p.category_id)?.name || 'Général'}</p>
-                                    <p className="mt-auto text-lg font-black text-teal-600">{formatAmount(p.unit_price)}</p>
+                                    <h3 className="font-bold text-[var(--text-main)] line-clamp-2 leading-tight mb-1">{p.name}</h3>
+                                    <p className="text-xs text-[var(--text-muted)] mb-3">{categories.find(c => c.id === p.category_id)?.name || 'Général'}</p>
+                                    <div className="mt-auto pt-3 border-t border-[var(--border-subtle)] flex justify-between items-center w-full">
+                                        <span className="font-bold text-[var(--primary)] text-lg">{formatAmount(p.unit_price)}</span>
+                                        <div className="h-6 w-6 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center text-[var(--text-main)] opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <PlusIcon className="w-4 h-4" />
+                                        </div>
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -183,60 +196,93 @@ export default function Sales() {
                 </div>
             </div>
 
-            <div className="w-[400px] flex flex-col bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-[3rem] shadow-2xl shadow-teal-900/5 p-10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full -mr-16 -mt-16"></div>
-
-                <div className="relative z-10 flex items-center justify-between mb-10">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-teal-600 text-white rounded-xl shadow-lg shadow-teal-600/20">
-                            <ShoppingCartIcon className="w-5 h-5" />
+            {/* Right Column: Cart */}
+            <div className="w-full lg:w-96 flex flex-col card-modern p-0 h-full overflow-hidden border border-[var(--border)] shadow-xl">
+                <div className="p-5 border-b border-[var(--border)] bg-[var(--bg-card)]">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <ShoppingCartIcon className="w-5 h-5 text-[var(--primary)]" />
+                            <h2 className="font-bold text-[var(--text-main)]">Panier</h2>
                         </div>
-                        <h2 className="text-xl font-black tracking-tight">Vente en cours</h2>
+                        {cart.length > 0 && (
+                            <button
+                                onClick={() => setCart([])}
+                                className="text-xs font-medium text-[var(--danger)] hover:underline"
+                            >
+                                Vider
+                            </button>
+                        )}
                     </div>
-                    {cart.length > 0 && (
-                        <button onClick={() => setCart([])} className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 transition-colors">
-                            Vider
-                        </button>
-                    )}
                 </div>
 
-                <div className="relative z-10 flex-1 overflow-y-auto space-y-5 pr-2 -mr-2 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--bg-subtle)]">
                     {cart.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center opacity-30 text-center px-10">
-                            <ShoppingCartIcon className="w-16 h-16 mb-4" />
-                            <p className="font-bold italic">Le panier est vide</p>
-                            <p className="text-xs mt-2">Ajoutez des produits pour commencer.</p>
+                        <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] opacity-60">
+                            <ShoppingCartIcon className="w-12 h-12 mb-3" />
+                            <p className="font-medium text-sm">Votre panier est vide</p>
+                            <p className="text-xs">Ajoutez des produits pour commencer</p>
                         </div>
                     ) : (
                         cart.map(item => (
-                            <div key={item.id} className="group flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-transparent hover:border-teal-500/20 transition-all">
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-black text-zinc-900 dark:text-white truncate">{item.name}</p>
-                                    <p className="text-xs text-teal-600 font-bold">{formatAmount(item.unit_price)}</p>
+                            <div key={item.id} className="bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-subtle)] shadow-sm flex flex-col gap-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
+                                        <p className="text-xs text-[var(--text-muted)]">{formatAmount(item.unit_price)} / unité</p>
+                                    </div>
+                                    <button
+                                        onClick={() => removeFromCart(item.id)}
+                                        className="text-[var(--text-muted)] hover:text-[var(--danger)] transition-colors"
+                                    >
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-zinc-700 rounded-lg shadow-sm text-zinc-500 hover:text-teal-600 transition-colors"><MinusIcon className="w-3 h-3" /></button>
-                                    <span className="text-sm font-black w-4 text-center">{item.cartQuantity}</span>
-                                    <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-zinc-700 rounded-lg shadow-sm text-zinc-500 hover:text-teal-600 transition-colors"><PlusIcon className="w-3 h-3" /></button>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3 bg-[var(--bg-subtle)] rounded-lg p-1">
+                                        <button
+                                            onClick={() => updateQuantity(item.id, -1)}
+                                            className="w-6 h-6 flex items-center justify-center rounded bg-white text-[var(--text-main)] shadow-sm hover:text-[var(--primary)]"
+                                        >
+                                            <MinusIcon className="w-3 h-3" />
+                                        </button>
+                                        <span className="text-sm font-bold w-4 text-center">{item.cartQuantity}</span>
+                                        <button
+                                            onClick={() => updateQuantity(item.id, 1)}
+                                            className="w-6 h-6 flex items-center justify-center rounded bg-white text-[var(--text-main)] shadow-sm hover:text-[var(--primary)]"
+                                        >
+                                            <PlusIcon className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                    <span className="font-bold text-[var(--primary)]">{formatAmount(item.unit_price * item.cartQuantity)}</span>
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
 
-                <div className="relative z-10 mt-10 pt-8 border-t-2 border-dashed border-zinc-100 dark:border-zinc-800 space-y-6">
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Total à payer</span>
-                        <span className="text-3xl font-black text-zinc-950 dark:text-white tracking-tighter">{formatAmount(cartTotal)}</span>
+                <div className="p-5 border-t border-[var(--border)] bg-[var(--bg-card)] space-y-4">
+                    <div className="flex justify-between items-end">
+                        <span className="text-sm font-medium text-[var(--text-muted)]">Total à payer</span>
+                        <span className="text-2xl font-bold text-[var(--text-main)] tracking-tight">{formatAmount(cartTotal)}</span>
                     </div>
                     <button
                         onClick={handleCheckout}
                         disabled={cart.length === 0 || processing}
-                        className="btn-vibrant w-full !py-5 !text-xs !uppercase !tracking-[0.3em]"
+                        className="btn-primary w-full py-3 text-sm flex justify-center items-center gap-2"
                     >
-                        {processing ? "Traitement..." : "Valider la transaction"}
+                        {processing ? (
+                            <>
+                                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                                Traitement...
+                            </>
+                        ) : (
+                            <>
+                                <span>Valider la commande</span>
+                                <span className="bg-white/20 px-2 py-0.5 rounded text-xs ml-2">{cart.reduce((a, b) => a + b.cartQuantity, 0)} articles</span>
+                            </>
+                        )}
                     </button>
-                    <p className="text-[10px] text-center text-zinc-400 font-medium">Une validation instantanée pour plus de fluidité.</p>
                 </div>
             </div>
         </div>
