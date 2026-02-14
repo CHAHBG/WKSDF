@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { CheckCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 export default function ThemeSelector() {
-    const { currentPalette, setCurrentPalette, palettes } = useTheme();
+    const { currentPalette, setCurrentPalette, palettes, removeCustomPalette } = useTheme();
 
     return (
         <div className="w-full">
@@ -17,8 +17,8 @@ export default function ThemeSelector() {
                             type="button"
                             onClick={() => setCurrentPalette(key)}
                             className={`group relative flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-200 outline-none ${isSelected
-                                    ? 'border-[var(--primary)] bg-[var(--bg-subtle)] shadow-md'
-                                    : 'border-transparent hover:border-[var(--border)] hover:bg-[var(--bg-subtle)]'
+                                ? 'border-[var(--primary)] bg-[var(--bg-subtle)] shadow-md'
+                                : 'border-transparent hover:border-[var(--border)] hover:bg-[var(--bg-subtle)]'
                                 }`}
                         >
                             {/* Color Preview Circles */}
@@ -47,10 +47,23 @@ export default function ThemeSelector() {
                                     <CheckCircleIcon className="w-4 h-4" />
                                 </div>
                             )}
+
+                            {/* Delete Action for Custom Themes */}
+                            {key.startsWith('custom_') && (
+                                <div
+                                    className="absolute top-2 left-2 text-[var(--text-muted)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm('Supprimer ce thème ?')) removeCustomPalette(key);
+                                    }}
+                                >
+                                    <TrashIcon className="w-4 h-4" />
+                                </div>
+                            )}
                         </button>
                     );
                 })}
             </div>
-        </div>
+        </div >
     );
 }

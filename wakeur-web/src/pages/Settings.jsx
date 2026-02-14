@@ -1,5 +1,6 @@
 import React from 'react';
 import ThemeSelector from '../components/ThemeSelector';
+import ThemeBuilder from '../components/ThemeBuilder';
 import { Cog6ToothIcon, SwatchIcon } from '@heroicons/react/24/outline';
 
 export default function Settings() {
@@ -24,6 +25,11 @@ export default function Settings() {
                 </div>
 
                 <ThemeSelector />
+
+                <div className="mt-8 border-t border-[var(--border)] pt-6">
+                    <h3 className="text-sm font-bold text-[var(--text-main)] mb-4">Créer un thème personnalisé</h3>
+                    <ThemeBuilder />
+                </div>
             </div>
 
             {/* Application Info */}

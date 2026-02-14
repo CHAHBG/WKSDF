@@ -90,9 +90,18 @@ const getInitialPalette = () => {
     return window.localStorage.getItem(PALETTE_STORAGE_KEY) || 'default';
 };
 
+const CUSTOM_PALETTES_STORAGE_KEY = 'ness_custom_palettes';
+
+const getInitialCustomPalettes = () => {
+    if (typeof window === 'undefined') return {};
+    const stored = window.localStorage.getItem(CUSTOM_PALETTES_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+};
+
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(getInitialTheme);
     const [currentPalette, setCurrentPalette] = useState(getInitialPalette);
+    const [customPalettes, setCustomPalettes] = useState(getInitialCustomPalettes);
 
     useEffect(() => {
         const html = document.documentElement;
@@ -101,9 +110,16 @@ export const ThemeProvider = ({ children }) => {
         window.localStorage.setItem(THEME_STORAGE_KEY, theme);
     }, [theme]);
 
+    // Save custom palettes
+    useEffect(() => {
+        window.localStorage.setItem(CUSTOM_PALETTES_STORAGE_KEY, JSON.stringify(customPalettes));
+    }, [customPalettes]);
+
+    const allPalettes = useMemo(() => ({ ...PALETTES, ...customPalettes }), [customPalettes]);
+
     // Dynamic CSS Injection
     useEffect(() => {
-        const palette = PALETTES[currentPalette] || PALETTES.default;
+        const palette = allPalettes[currentPalette] || allPalettes.default || PALETTES.default;
         const styleId = 'theme-overrides';
         let styleTag = document.getElementById(styleId);
 
@@ -128,10 +144,26 @@ export const ThemeProvider = ({ children }) => {
 
         styleTag.innerHTML = css;
         window.localStorage.setItem(PALETTE_STORAGE_KEY, currentPalette);
-    }, [currentPalette]);
+    }, [currentPalette, allPalettes]);
 
     const toggleTheme = () => {
         setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    };
+
+    const addCustomPalette = (key, palette) => {
+        setCustomPalettes(prev => ({ ...prev, [key]: palette }));
+        setCurrentPalette(key);
+    };
+
+    const removeCustomPalette = (key) => {
+        setCustomPalettes(prev => {
+            const newState = { ...prev };
+            delete newState[key];
+            return newState;
+        });
+        if (currentPalette === key) {
+            setCurrentPalette('default');
+        }
     };
 
     const value = useMemo(() => ({
@@ -141,8 +173,10 @@ export const ThemeProvider = ({ children }) => {
         isDark: theme === 'dark',
         currentPalette,
         setCurrentPalette,
-        palettes: PALETTES
-    }), [theme, currentPalette]);
+        palettes: allPalettes,
+        addCustomPalette,
+        removeCustomPalette
+    }), [theme, currentPalette, allPalettes]);
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
