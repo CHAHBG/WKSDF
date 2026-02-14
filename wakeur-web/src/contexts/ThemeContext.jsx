@@ -115,14 +115,14 @@ export const ThemeProvider = ({ children }) => {
 
         const css = `
             :root {
-                --primary: ${palette.colors.light.primary};
-                --primary-light: ${palette.colors.light.primaryLight};
-                --accent: ${palette.colors.light.accent};
+                --primary: ${palette.colors.light.primary} !important;
+                --primary-light: ${palette.colors.light.primaryLight} !important;
+                --accent: ${palette.colors.light.accent} !important;
             }
             html.dark {
-                --primary: ${palette.colors.dark.primary};
-                --primary-light: ${palette.colors.dark.primaryLight};
-                --accent: ${palette.colors.dark.accent};
+                --primary: ${palette.colors.dark.primary} !important;
+                --primary-light: ${palette.colors.dark.primaryLight} !important;
+                --accent: ${palette.colors.dark.accent} !important;
             }
         `;
 
