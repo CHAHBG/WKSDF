@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         // Check for Agent Session first
-        const storedAgent = localStorage.getItem('wakeur_agent_session');
+        const storedAgent = localStorage.getItem('ness_agent_session');
 
         if (storedAgent) {
             try {
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
                 setAgentSession(agent);
             } catch (e) {
                 console.error("Invalid agent session", e);
-                localStorage.removeItem('wakeur_agent_session');
+                localStorage.removeItem('ness_agent_session');
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setUser(session?.user ?? null);
                     if (session?.user) {
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            const hasAgentSession = localStorage.getItem('wakeur_agent_session');
+            const hasAgentSession = localStorage.getItem('ness_agent_session');
 
             if (!hasAgentSession) {
                 setUser(session?.user ?? null);
@@ -106,14 +106,14 @@ export const AuthProvider = ({ children }) => {
             if (!data) throw new Error('Identifiants incorrects');
 
             // Store session
-            localStorage.setItem('wakeur_agent_session', JSON.stringify(data));
+            localStorage.setItem('ness_agent_session', JSON.stringify(data));
             await setAgentSession(data);
             return { success: true };
         } catch (error) {
             console.error('Agent login error:', error);
             return { success: false, error: error.message };
         } finally {
-            if (!localStorage.getItem('wakeur_agent_session')) {
+            if (!localStorage.getItem('ness_agent_session')) {
                 setLoading(false);
             }
         }
@@ -185,7 +185,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const signOut = async () => {
-        localStorage.removeItem('wakeur_agent_session');
+        localStorage.removeItem('ness_agent_session');
         await supabase.auth.signOut();
         setUser(null);
         setUserProfile(null);

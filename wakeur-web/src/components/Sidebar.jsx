@@ -78,12 +78,12 @@ export default function Sidebar({ isOpen = false, onClose = () => { }, isCollaps
                 <div className={`flex items-center justify-between px-4 py-6 border-b border-[var(--border-subtle)] ${isCollapsed ? 'justify-center' : ''}`}>
                     <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--primary)] text-white shadow-md">
-                            <span className="text-lg font-bold font-serif-display">W</span>
+                            <span className="text-lg font-bold font-serif-display">N</span>
                         </div>
                         {!isCollapsed && (
                             <div className="flex flex-col">
-                                <span className="text-sm font-bold tracking-tight text-[var(--text-main)] uppercase">Wakeur</span>
-                                <span className="text-[10px] font-semibold tracking-wider text-[var(--text-muted)]">Sokhna</span>
+                                <span className="text-sm font-bold tracking-tight text-[var(--text-main)] uppercase">NESS</span>
+                                <span className="text-[10px] font-semibold tracking-wider text-[var(--text-muted)]">Gestion Unifiée</span>
                             </div>
                         )}
                     </div>

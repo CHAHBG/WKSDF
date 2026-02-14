@@ -26,7 +26,7 @@ export default function Reports() {
         try {
             const { data: products } = await supabase.from('v_inventory_with_avoir').select('*').order('name');
             const doc = new jsPDF();
-            const shopName = user?.shop_settings?.shop_name || 'Wakeur Sokhna';
+            const shopName = user?.shop_settings?.shop_name || 'NESS';
 
             // Modern Header
             doc.setFillColor(15, 23, 42); // slate-900
@@ -66,7 +66,7 @@ export default function Reports() {
         try {
             const { data: transactions } = await supabase.from('mm_transactions').select('*, mm_platforms(name)').gte('transaction_date', dateRange.start).lte('transaction_date', `${dateRange.end}T23:59:59`).order('transaction_date', { ascending: false });
             const doc = new jsPDF();
-            const shopName = user?.shop_settings?.shop_name || 'Wakeur Sokhna';
+            const shopName = user?.shop_settings?.shop_name || 'NESS';
 
             // Modern Header
             doc.setFillColor(15, 23, 42); // slate-900

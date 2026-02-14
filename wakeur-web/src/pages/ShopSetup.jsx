@@ -70,7 +70,7 @@ export default function ShopSetup() {
                         </div>
                         <h1 className="text-3xl font-serif-display font-bold mb-4 leading-tight">Configuration de votre commerce.</h1>
                         <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-sm">
-                            Activez la puissance de Wakeur en définissant l'identité fondamentale de votre boutique.
+                            Activez la puissance de NESS en définissant l'identité fondamentale de votre boutique.
                         </p>
                     </div>
                     {/* Decorative */}

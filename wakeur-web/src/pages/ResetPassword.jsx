@@ -91,7 +91,7 @@ export default function ResetPassword() {
                         </div>
                         <h1 className="text-3xl font-serif-display font-bold mb-4 leading-tight">Sécurité de l'accès.</h1>
                         <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-sm">
-                            Définissez une nouvelle clé d'entrée pour sécuriser votre compte Wakeur.
+                            Définissez une nouvelle clé d'entrée pour sécuriser votre compte NESS.
                         </p>
                     </div>
                 </div>

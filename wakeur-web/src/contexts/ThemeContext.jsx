@@ -1,8 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-const THEME_STORAGE_KEY = 'wakeur_theme';
-const PALETTE_STORAGE_KEY = 'wakeur_palette';
+const THEME_STORAGE_KEY = 'ness_theme';
+const PALETTE_STORAGE_KEY = 'ness_palette';
 
 export const PALETTES = {
     default: {

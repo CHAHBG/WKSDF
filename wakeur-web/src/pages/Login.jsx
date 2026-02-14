@@ -71,10 +71,10 @@ export default function Login() {
                             <span className="text-xl font-serif-display font-bold">W</span>
                         </div>
                         <h1 className="text-4xl font-serif-display font-bold mb-4 leading-tight">
-                            Wakeur Sokhna.
+                            NESS.
                         </h1>
                         <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-xs">
-                            Plateforme de gestion unifiée pour point de vente et services financiers.
+                            Plateforme de gestion unifiée pour point de vente et services financiers.es financiers.
                         </p>
                     </div>
                     <div className="relative z-10 flex items-center gap-3 text-xs font-semibold text-[var(--accent)] tracking-wider uppercase">

@@ -36,7 +36,7 @@ export default function Layout() {
         }).format(new Date());
     }, []);
 
-    const shopName = shopSettings?.shop_name || 'Wakeur Sokhna';
+    const shopName = shopSettings?.shop_name || 'NESS';
     const initials = userProfile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'US';
 
     return (

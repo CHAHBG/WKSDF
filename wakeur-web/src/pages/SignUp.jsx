@@ -53,7 +53,7 @@ export default function SignUp() {
                         <span className="font-serif-display font-bold text-lg">W</span>
                     </div>
                     <h2 className="text-2xl font-bold font-serif-display text-[var(--text-main)]">Créer un compte</h2>
-                    <p className="mt-2 text-sm text-[var(--text-muted)]">Rejoignez l'écosystème Wakeur Sokhna.</p>
+                    <p className="mt-2 text-sm text-[var(--text-muted)]">Rejoignez l'écosystème NESS.</p>
                 </div>
 
                 <form className="space-y-5" onSubmit={handleSignUp}>
