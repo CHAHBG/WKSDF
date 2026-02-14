@@ -17,6 +17,7 @@ import AgentManagement from './pages/AgentManagement';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
+import Settings from './pages/Settings';
 
 const AppRoutes = () => {
   const { user, userProfile, loading } = useAuth();
@@ -45,21 +46,22 @@ const AppRoutes = () => {
             <Route path="*" element={<Navigate to="/setup-shop" replace />} />
           </>
         ) : (
-        <>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="inventory" element={<Inventory />} />
-            <Route path="transfers" element={<Transfers />} />
-            <Route path="mobile-money" element={<MobileMoney />} />
-            <Route path="sales" element={<Sales />} />
-            <Route path="transactions" element={<Transactions />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="expenses" element={<Expenses />} />
-            <Route path="agents" element={<AgentManagement />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-          <Route path="/setup-shop" element={<Navigate to="/" replace />} />
-        </>
+          <>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="inventory" element={<Inventory />} />
+              <Route path="transfers" element={<Transfers />} />
+              <Route path="mobile-money" element={<MobileMoney />} />
+              <Route path="sales" element={<Sales />} />
+              <Route path="transactions" element={<Transactions />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="expenses" element={<Expenses />} />
+              <Route path="agents" element={<AgentManagement />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+            <Route path="/setup-shop" element={<Navigate to="/" replace />} />
+          </>
         )
       ) : (
         <>

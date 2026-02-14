@@ -13,7 +13,8 @@ import {
     ArrowLeftOnRectangleIcon,
     DocumentChartBarIcon,
     ChevronDoubleLeftIcon,
-    ChevronDoubleRightIcon
+    ChevronDoubleRightIcon,
+    Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -39,6 +40,7 @@ export default function Sidebar({ isOpen = false, onClose = () => { }, isCollaps
         { path: '/agents', label: 'Agents', icon: UsersIcon, allowedRoles: ['owner'], section: 'Gestion' },
         { path: '/transactions', label: 'Historique', icon: DocumentChartBarIcon, allowedRoles: ['owner', 'agent'], section: 'Gestion' },
         { path: '/reports', label: 'Rapports', icon: ChartBarIcon, allowedRoles: ['owner'], section: 'Gestion' },
+        { path: '/settings', label: 'Paramètres', icon: Cog6ToothIcon, allowedRoles: ['owner', 'agent'], section: 'Système' },
     ];
 
     const filterItemsByRole = (items) => {
