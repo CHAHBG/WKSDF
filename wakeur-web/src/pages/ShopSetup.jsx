@@ -10,6 +10,7 @@ import {
     ArrowRightIcon,
     ArrowLeftOnRectangleIcon
 } from '@heroicons/react/24/outline';
+import ThemeSelector from '../components/ThemeSelector';
 
 const cleanOptional = (value) => {
     const normalized = value.trim();
@@ -147,6 +148,14 @@ export default function ShopSetup() {
                             </div>
                         </div>
 
+                        {/* Theme Selector Section */}
+                        <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Apparence de votre boutique</label>
+                            <div className="p-4 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-2xl">
+                                <ThemeSelector />
+                            </div>
+                        </div>
+
                         <div className="flex gap-4 pt-4">
                             <button type="submit" disabled={submitting} className="btn-primary flex-1 py-3 text-sm flex items-center justify-center gap-2 group">
                                 {submitting ? "Finalisation..." : "Activer mon commerce"}
@@ -163,6 +172,7 @@ export default function ShopSetup() {
                         </div>
                     </form>
                 </div>
+
             </div>
         </div>
     );

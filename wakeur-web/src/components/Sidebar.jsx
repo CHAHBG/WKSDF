@@ -55,7 +55,7 @@ export default function Sidebar({ isOpen = false, onClose = () => { }, isCollaps
     const linkClass = (path) => {
         const isActive = location.pathname === path;
         return `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
-            ? 'bg-[var(--primary)] text-white shadow-sm'
+            ? 'bg-[var(--primary)] text-[var(--text-inverted)] shadow-sm'
             : 'text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-main)]'
             } ${isCollapsed ? 'justify-center' : ''}`;
     };
